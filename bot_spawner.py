@@ -8,13 +8,13 @@ class Spawner:
         self.__gameState = gameState
         self.__spawning = True
 
-        
+        self.__toSpawn = None
     #A section is defined as a list of enemies to spawn in order
     def loadSection(self, enemyData, sectionType):
         self.__gameSections.append([enemyData, sectionType])
         
-    def __spawn(self,enemy):
-        self.__gameState.addObject(enemy)
+    def __spawn(self):
+        self.__gameState.addObject(self.__toSpawn, "Enemy")
         
         
     def update(self,dt): # gameSections = [[[enemy,enemy,enemy],"rapid"], [[enemy,enemy,enemy],"continuous"]]
@@ -25,7 +25,7 @@ class Spawner:
         if (self.__spawning):
             if (self.__timeLast >= self.__delay):
                 print "spawnedEnemy"
-                self.__spawn(self.__gameSections[0][0].pop(0))
+                self.__toSpawn = self.__gameSections[0][0].pop(0)
                 self.__timeLast = 0
                 
             if (len(self.__gameSections[0][0]) <= 0):
@@ -34,4 +34,7 @@ class Spawner:
                     print "All enemies spawned"
                     self.__spawning = False
         
-            
+    def lateUpdate(self, dt):
+        if (self.__toSpawn != None):
+            self.__spawn()
+                
