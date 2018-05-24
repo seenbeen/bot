@@ -1,4 +1,4 @@
-from bot_fsm import *
+from bot_framework.bot_fsm import *
 
 class BOTFSMTestClass(BOTFSM):
     # standByState
@@ -79,8 +79,9 @@ class BOTFSMTestClass(BOTFSM):
         initState = "standby"
         return [initState, states]
 
-myFSM = BOTFSMTestClass()
+def run():
+    myFSM = BOTFSMTestClass()
 
-for i in range(20):
-    myFSM.update(float(i))
-    myFSM.lateUpdate()
+    for i in range(20):
+        myFSM.update(float(i))
+        myFSM.lateUpdate()
