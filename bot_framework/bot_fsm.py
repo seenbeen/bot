@@ -3,15 +3,15 @@ class BOTFSM: # extends BOTGameObjectComponent
         initStateKey, states = self.init()
         self.__states = {}
         for s in states:
-            if s.name in self.__states:
-                raise Exception('Error, state %s is defined twice when initializing BOTFSM %s.'%self.__class__.__name__)
-            s.fsm = self
-            self.__states[s.name] = s
+            if s.getName() in self.__states:
+                raise Exception('Error, state %s is defined twice when initializing BOTFSM %s.'%(s.getName(), self.__class__.__name__))
+            self.__states[s.getName()] = s
             
         if initStateKey not in self.__states:
             raise Exception('Error, starting state %s is not in %s states [%s]'%(initStateKey, self.__class__.__name__, ", ".join(self.__states.keys())))
         self.__currentState = self.__states[initStateKey]
         self.__transitionToState = None
+        self.__currentState.transitionFrom(None)
 
     """
         init must return a tuple containing a
@@ -20,21 +20,21 @@ class BOTFSM: # extends BOTGameObjectComponent
     def init(self):
         raise Exception('Error, %s must define BOTFSM initStates'%self.__class__.__name__)
 
-    def transitionTo(self, stateKey):
+    def transitionToState(self, stateKey):
         if stateKey not in self.__states:
             raise Exception('Error, %s is not in %s states [%s]'%(stateKey, self.__class__.__name__, ", ".join(self.__states.keys())))
         self.__transitionToState = stateKey
 
     def update(self, deltaTime):
-        self.__currentState.update(self.__currentState, deltaTime)
+        self.__currentState.update(deltaTime)
 
     def lateUpdate(self):
-        self.__currentState.lateUpdate(self.__currentState)
+        self.__currentState.lateUpdate()
         if self.__transitionToState != None:
             newState = self.__states[self.__transitionToState]
             self.__transitionToState = None
-            self.__currentState.transitionTo(self.__currentState, newState)
-            newState.transitionFrom(newState, self.__currentState)
+            self.__currentState.transitionTo(newState)
+            newState.transitionFrom(self.__currentState)
             self.__currentState = newState
         
 class BOTFSMState:
@@ -47,16 +47,29 @@ class BOTFSMState:
         update(self, deltaTime)
         lateUpdate(self)
     """
-    def __init__(self, name, meths):
-        self.fsm = None
-        self.name = name
+    def __init__(self, fsm, name, meths):
+        self.__fsm = fsm
+        self.__name = name
         meths["init"](self)
-        self.transitionFrom = meths["transitionFrom"]
-        self.transitionTo = meths["transitionTo"]
-        self.update = meths["update"]
-        self.lateUpdate = meths["lateUpdate"]
+        self.__transitionFrom = meths["transitionFrom"]
+        self.__transitionTo = meths["transitionTo"]
+        self.__update = meths["update"]
+        self.__lateUpdate = meths["lateUpdate"]
 
-    def transitionToState(self, stateKey):
-        if self.fsm == None:
-            raise Exception('Error, please do NOT try to transition to states in FSMState init from $s'%(self.__class__.__name__))
-        self.fsm.transitionTo(stateKey)
+    def getName(self):
+        return self.__name
+
+    def transitionFrom(self, fromState):
+        self.__transitionFrom(self, fromState)
+
+    def transitionTo(self, toState):
+        self.__transitionTo(self, toState)
+
+    def update(self, deltaTime):
+        self.__update(self, deltaTime)
+
+    def lateUpdate(self):
+        self.__lateUpdate(self)
+
+    def getFSM(self):
+        return self.__fsm

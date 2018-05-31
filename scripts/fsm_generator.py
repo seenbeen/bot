@@ -42,13 +42,13 @@ fopen.write(" "*8 + "states = [\n")
 tempStates = []
 for state in stateNames:
     tempState = ""
-    tempState += (" "*12 + "BOTFSMState(\"%s\",\n"%(state))
+    tempState += (" "*12 + "BOTFSMState(self, \"%s\",\n"%(state))
     tempState += (" "*16 + "{\n")
     for meth in ["init", "transitionFrom", "transitionTo", "update", "lateUpdate"]:
         tempState += (" "*20 + "\"%s\" : self.__%s%s,\n"%(meth,state,meth[0].upper()+meth[1:]))
     tempState += (" "*16 + "})")
     tempStates.append(tempState)
-fopen.write(",\n".join(tempStates))
+fopen.write(",\n".join(tempStates)+"\n")
 fopen.write(" "*12 + "]\n")
 fopen.write(" "*8 + "initState = \"%s\"\n"%(startState))
 fopen.write(" "*8 + "return [initState, states]\n")
