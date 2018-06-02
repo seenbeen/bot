@@ -1,6 +1,4 @@
-from operator import pos
-from cmath import sqrt
-
+from math import sqrt as math_sqrt
 
 class Vector2:
     def __init__(self, x, y):
@@ -18,44 +16,31 @@ class Vector2:
         return Vector2(x,y)
     
     def __str__(self):
-        return "(%i,%i)"%(self.x,self.y)
+        return "Vector2: (%.2f,%.2f)"%(self.x,self.y)
     
     def __repr__(self):
-        return "(%i,%i)"%(self.x,self.y)
+        return "Vector2(%.2f,%.2f)"%(self.x,self.y)
     
-    def __mul__(self, other):
-        x = self.x*other
-        y = self.y*other
-        return Vector2(x,y)
+    def __mul__(self, scalar):
+        return Vector2(self.x*scalar, self.y*scalar)
     
-    def __div__(self, other):
-        x = self.x/other
-        y = self.y/other
-        return Vector2(x,y)
+    def __div__(self, scalar):
+        return self.__mul__(1.0/scalar)
     
-    def magnitude(self):
-        return sqrt(self.x * self.x + self.y * self.y)   
+    def __abs__(self):
+        return math_sqrt(Vector2.dot(self, self))   
         
-    def normalized(self):
-        l = self.magnitude()
-        
-        x = self.x / l
-        y = self.y / l
-        
-        return Vector2(x,y)
+    def normalize(self):
+        return self/self.__abs__()
     
     @staticmethod 
     def dot(VectorA, VectorB):
-        A = VectorA.normalized()
-        B = VectorB.normalized()
-        dot = (A.x*B.x) + (A.y*B.y)
+        dot = (VectorA.x*VectorB.x) + (VectorA.y*VectorB.y)
         return dot
     
     @staticmethod
     def cross(VectorA, VectorB):
-        A = VectorA.normalized()
-        B = VectorB.normalized()
-        cross = (A.x*B.y) - (A.y*B.x)
+        cross = (VectorA.x*VectorB.y) - (VectorA.y*VectorB.x)
         return cross
     
 class Transform:
