@@ -2,46 +2,44 @@ from math import sqrt as math_sqrt
 
 class Vector2:
     def __init__(self, x, y):
-        self.x = x
-        self.y = y
+        self.x = float(x)
+        self.y = float(y)
 
     def __add__(self, vector):
-        x = self.x + vector.x
-        y = self.y + vector.y
-        return Vector2(x,y)
+        return Vector2(self.x + vector.x, self.y + vector.y)
         
     def __sub__(self, vector):
-        x = self.x - vector.x
-        y = self.y - vector.y
-        return Vector2(x,y)
+        return Vector2(self.x - vector.x, self.y - vector.y)
     
     def __str__(self):
-        return "Vector2: (%.2f,%.2f)"%(self.x,self.y)
+        return "Vector2: (%.2f, %.2f)"%(self.x, self.y)
     
     def __repr__(self):
-        return "Vector2(%.2f,%.2f)"%(self.x,self.y)
+        return "Vector2(%f, %f)"%(self.x, self.y)
     
     def __mul__(self, scalar):
-        return Vector2(self.x*scalar, self.y*scalar)
+        return Vector2(self.x * scalar, self.y * scalar)
     
     def __div__(self, scalar):
-        return self.__mul__(1.0/scalar)
+        return self * (1.0/scalar)
     
     def __abs__(self):
-        return math_sqrt(Vector2.dot(self, self))   
+        return math_sqrt(Vector2.dot(self, self))
+    
+    def __eq__(self, vector):
+        epsilon = 0.000001
+        return (abs(self.x - vector.x) <= epsilon and abs(self.y - vector.y) <= epsilon)
         
     def normalize(self):
-        return self/self.__abs__()
+        return self / abs(self)
     
     @staticmethod 
     def dot(VectorA, VectorB):
-        dot = (VectorA.x*VectorB.x) + (VectorA.y*VectorB.y)
-        return dot
+        return (VectorA.x * VectorB.x) + (VectorA.y * VectorB.y)
     
     @staticmethod
     def cross(VectorA, VectorB):
-        cross = (VectorA.x*VectorB.y) - (VectorA.y*VectorB.x)
-        return cross
+        return (VectorA.x * VectorB.y) - (VectorA.y * VectorB.x)
     
 class Transform:
     def __init__(self, position, rot, scale):
