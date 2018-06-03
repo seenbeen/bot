@@ -1,16 +1,21 @@
 import pygame._view #required for py2exe
-
 import pygame
+from bot_framework.bot_inputmanager import InputManager
 
 running = True
 
 screen = pygame.display.set_mode((720, 900))
 
+
+myInputs = InputManager()
+
 while running:
-    for evt in pygame.event.get():
-        if evt.type == pygame.QUIT:
-            running = False
-    mx,my =  pygame.mouse.get_pos()
+    
+    myInputs.update(0)
+    
+    if myInputs.getEvent(pygame.QUIT):
+        running = False
+    mx,my =  myInputs.getMouseCoords()
 
     screen.fill((0,0,0))
 
