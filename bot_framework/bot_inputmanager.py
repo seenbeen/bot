@@ -1,8 +1,21 @@
 from bot_fsm import *
+from util.bot_math import Vector2
 import pygame
    
 class InputManager(BOTFSM):
+    __instance = None
     
+    KEYS = 0
+    EVENTS = 1
+    MOUSEPOS = 2
+    MOUSEBUTTONS = 3
+    
+    @staticmethod
+    def getInstance():
+        if (InputManager.__instance == None):
+            InputManager.__instance = InputManager()
+        return InputManager.__instance
+            
     @staticmethod
     def __runningInit(self):
         self.getFSM().resetInputs()
@@ -17,7 +30,10 @@ class InputManager(BOTFSM):
 
     @staticmethod
     def __runningUpdate(self, deltaTime):
-        self.getFSM().setInputs(pygame.event.get(), pygame.key.get_pressed, pygame.mouse.get_pos(), pygame.mouse.get_pressed())
+        self.getFSM().setInputs(pygame.event.get(), InputManager.EVENTS)
+        self.getFSM().setInputs(pygame.key.get_pressed(), InputManager.KEYS)
+        self.getFSM().setInputs(pygame.mouse.get_pos(), InputManager.MOUSEPOS)
+        self.getFSM().setInputs(pygame.mouse.get_pressed(), InputManager.MOUSEBUTTONS)
 
     @staticmethod
     def __runningLateUpdate(self):
@@ -29,30 +45,35 @@ class InputManager(BOTFSM):
         self.mx, self.my = 0, 0
         self.mouseKeys = []
 
-    def setInputs(self, events, keys, mpos, mkeys):
-        self.events = events
-        self.keys = keys
-        self.mx, self.my = mpos
-        self.mouseKeys = mkeys
+    def setInputs(self, set, name):
+        if (name == InputManager.KEYS):
+            self.keys = set
+        elif (name == InputManager.EVENTS):
+            self.events = set
+        elif (name == InputManager.MOUSEPOS):
+            self.mx, self.my = set
+        elif (name == InputManager.MOUSEBUTTONS):
+            self.mouseButtons = set
         
-    def getKey(self, key):
+    def getKeyDown(self, key):
         return self.keys[key]
     
     def getMouseCoords(self):
-        return (self.mx, self.my)
+        return Vector2(self.mx, self.my)
     
-    def getMouseKeys(self, key):
-        return self.mouseKeys[key]
+    def getMouseButton(self, key):
+        return self.mouseButtons[key]
     
     def getEvent(self, type):
+        events = []
         for evt in self.events:
             if evt.type == type:
-                return evt
-        return None
+                events.append(evt)
+        return events
     
             
     
-
+    
 
     def init(self):
         states = [
@@ -66,4 +87,5 @@ class InputManager(BOTFSM):
                 })
             ]
         initState = "running"
+        
         return [initState, states]
