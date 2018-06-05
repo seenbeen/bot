@@ -12,13 +12,13 @@ InputManager.initInstance()
 
 while running:
     
-    InputManager.getInstance().update(0)
+    InputManager.instance().update(0)
     
-    if InputManager.getInstance().getEvent(pygame.QUIT):
+    if InputManager.instance().getEvent(pygame.QUIT):
         running = False
         
-    mx =  InputManager.getInstance().getMouseCoords().x
-    my =  InputManager.getInstance().getMouseCoords().y
+    mx =  InputManager.instance().getMouseCoords().x
+    my =  InputManager.instance().getMouseCoords().y
     
     screen.fill((0,0,0))
 

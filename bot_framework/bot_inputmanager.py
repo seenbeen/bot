@@ -26,7 +26,7 @@ class InputManager(BOTFSM):
             raise Exception("Singleton does not exist and is being shut down(Input Manager)")
     
     @staticmethod
-    def getInstance():
+    def instance():
         if (InputManager.__instance == None):
             raise Exception("Singleton has not been initialized(Input Manager)")
         return InputManager.__instance
