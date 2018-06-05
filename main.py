@@ -7,6 +7,8 @@ running = True
 screen = pygame.display.set_mode((720, 900))
 
 
+InputManager.initInstance()
+
 
 while running:
     
@@ -26,3 +28,4 @@ while running:
 
 pygame.quit()
 
+InputManager().shutdownInstance()

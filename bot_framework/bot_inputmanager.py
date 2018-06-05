@@ -1,6 +1,7 @@
+import pygame
 from bot_fsm import *
 from util.bot_math import Vector2
-import pygame
+
    
 class InputManager(BOTFSM):
     __instance = None
@@ -11,9 +12,23 @@ class InputManager(BOTFSM):
     MOUSEBUTTONS = 3
     
     @staticmethod
-    def getInstance():
+    def initInstance():
         if (InputManager.__instance == None):
             InputManager.__instance = InputManager()
+        else:
+            raise Exception("Singleton is already initialized(Input Manager)")
+        
+    @staticmethod
+    def shutdownInstance():
+        if (InputManager.__instance != None):
+            InputManager.__instance = None
+        else:
+            raise Exception("Singleton does not exist and is being shut down(Input Manager)")
+    
+    @staticmethod
+    def getInstance():
+        if (InputManager.__instance == None):
+            raise Exception("Singleton has not been initialized(Input Manager)")
         return InputManager.__instance
             
     @staticmethod
@@ -45,15 +60,17 @@ class InputManager(BOTFSM):
         self.mx, self.my = 0, 0
         self.mouseKeys = []
 
-    def setInputs(self, set, name):
-        if (name == InputManager.KEYS):
-            self.keys = set
-        elif (name == InputManager.EVENTS):
-            self.events = set
-        elif (name == InputManager.MOUSEPOS):
-            self.mx, self.my = set
-        elif (name == InputManager.MOUSEBUTTONS):
-            self.mouseButtons = set
+    def setInputs(self, inputData, dataType):
+        if (dataType == InputManager.KEYS):
+            self.keys = inputData
+        elif (dataType == InputManager.EVENTS):
+            self.events = inputData
+        elif (dataType == InputManager.MOUSEPOS):
+            self.mx, self.my = inputData
+        elif (dataType == InputManager.MOUSEBUTTONS):
+            self.mouseButtons = inputData
+        else:
+            raise Exception("Invalid type of input data was submitted to the input manager")
         
     def getKeyDown(self, key):
         return self.keys[key]
@@ -71,10 +88,6 @@ class InputManager(BOTFSM):
                 events.append(evt)
         return events
     
-            
-    
-    
-
     def init(self):
         states = [
             BOTFSMState(self, "running",
@@ -87,5 +100,5 @@ class InputManager(BOTFSM):
                 })
             ]
         initState = "running"
-        
         return [initState, states]
+    
