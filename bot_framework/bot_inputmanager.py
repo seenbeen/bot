@@ -4,7 +4,6 @@ from util.bot_math import Vector2
 from util.pattern.bot_singleton import Singleton
    
 class InputManager(BOTFSM):
-
     KEYS = 0
     EVENTS = 1
     MOUSEPOS = 2
@@ -80,4 +79,7 @@ class InputManager(BOTFSM):
             ]
         initState = "running"
         return [initState, states]
+    
+Singleton.transformToSingleton(InputManager)
+    
     
