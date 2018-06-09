@@ -1,11 +1,16 @@
 import pygame._view #required for py2exe
 import pygame
 from bot_framework.bot_inputmanager import InputManager
+from util.pattern.bot_singleton import Singleton
+
 
 running = True
 
 screen = pygame.display.set_mode((720, 900))
 
+
+
+Singleton.createSingleton(InputManager)
 
 InputManager.initInstance()
 
