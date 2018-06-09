@@ -1,9 +1,11 @@
-
+"""Singleton class used to convert other classes into singletons"""
 class Singleton:
-     
+    
+    """Call this method on a class you wish to turn into a singleton"""
     @staticmethod
     def transformToSingleton(className):
-        
+
+        """Initializes the singleton, calls __init__ with any passed arguments on the singleton's class"""
         @classmethod
         def initialize(cls, *args):
             if (cls.__instance == None):
@@ -11,6 +13,7 @@ class Singleton:
             else:
                 raise Exception("Singleton is already initialized(%s)"%cls.__name__)
             
+        """Removes the singleton instance and calls del on the class"""
         @classmethod    
         def shutdown(cls):
             if (cls.__instance != None):
@@ -19,6 +22,7 @@ class Singleton:
             else:
                 raise Exception("Singleton does not exist and is being shut down(%s)"%cls.__name__)
             
+        """returns the instance of a singleton"""    
         @classmethod
         def instance(cls):
             if (cls.__instance == None):

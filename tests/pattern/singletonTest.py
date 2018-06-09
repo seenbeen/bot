@@ -1,10 +1,12 @@
 from util.pattern.bot_singleton import Singleton
-
 class tester:
     x = None
-    
+    d = False
     def __init__(self, x):
         tester.x = x
+        
+    def __del__(self):
+        tester.d = True
         
     @staticmethod
     def doSomething():
@@ -17,6 +19,8 @@ def run():
     tester.instance().doSomething()
     tester.shutdown()
     testShutdown()
+    
+    assert tester.d == True, "__del__ test failed"
     
 def testInit():
     try:

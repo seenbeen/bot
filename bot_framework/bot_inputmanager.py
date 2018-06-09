@@ -82,4 +82,3 @@ class InputManager(BOTFSM):
     
 Singleton.transformToSingleton(InputManager)
     
-    
