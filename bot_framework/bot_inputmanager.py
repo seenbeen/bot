@@ -1,36 +1,14 @@
 import pygame
 from bot_fsm import *
 from util.bot_math import Vector2
-
+from util.pattern.bot_singleton import Singleton
    
 class InputManager(BOTFSM):
-    __instance = None
-    
     KEYS = 0
     EVENTS = 1
     MOUSEPOS = 2
     MOUSEBUTTONS = 3
-    
-    @staticmethod
-    def initInstance():
-        if (InputManager.__instance == None):
-            InputManager.__instance = InputManager()
-        else:
-            raise Exception("Singleton is already initialized(Input Manager)")
-        
-    @staticmethod
-    def shutdownInstance():
-        if (InputManager.__instance != None):
-            InputManager.__instance = None
-        else:
-            raise Exception("Singleton does not exist and is being shut down(Input Manager)")
-    
-    @staticmethod
-    def instance():
-        if (InputManager.__instance == None):
-            raise Exception("Singleton has not been initialized(Input Manager)")
-        return InputManager.__instance
-            
+
     @staticmethod
     def __runningInit(self):
         self.getFSM().resetInputs()
@@ -101,4 +79,6 @@ class InputManager(BOTFSM):
             ]
         initState = "running"
         return [initState, states]
+    
+Singleton.transformToSingleton(InputManager)
     
