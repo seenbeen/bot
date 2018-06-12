@@ -14,13 +14,19 @@ def run():
     def genStar(sides):
         return [map(int, rotatePt([100/3, 100][i%2], i*360/sides)) for i in range(sides)]
 
-    center = Vector2()
+    def genCrossHair(crossHairSize):
+        xLine = Vector2(crossHairSize, 0)
+        yLine = Vector2(0, crossHairSize)
+        return [-xLine, xLine, -yLine, yLine]
 
     camTransform = Transform()
     camTransform.scale = Vector2(0.75, 0.75)
     camDims = Vector2(800,600)
-    vpDims = Vector2(800,600)
 
+    vpPos = camDims * 0.25/2
+    vpDims = camDims * 0.75
+
+    center = Vector2()
     vecStar = map(lambda pt: Vector2(*pt), genStar(10))
 
     starTransform = Transform()
@@ -31,36 +37,69 @@ def run():
         for evt in event.get():
             if evt.type == QUIT:
                 running = False
+
+        # controls to move the viewport around
+        keys = key.get_pressed()
+        deltaVector = Vector2()
+        vel = 200/60.0 # 200 px / 60 frames
+
+        # remember viewport coords are given in screen space (up is negative)
+        if keys[K_UP]:
+            deltaVector.y = -vel
+        elif keys[K_DOWN]:
+            deltaVector.y = vel
+        if keys[K_LEFT]:
+            deltaVector.x = -vel
+        elif keys[K_RIGHT]:
+            deltaVector.x = vel
+
+        vpPos += deltaVector
+        
         ctr = (ctr + 1)%360
         camTransform.position = Vector2(*rotatePt(150, ctr))
         starTransform.rotation = (starTransform.rotation + 2) % 360
         starTransform.position = Vector2(*rotatePt(100, -starTransform.rotation))
         
-        vMat = Mat33Util.getCamToViewportMatrix(camDims, vpDims)
-        cMat = camTransform.getInverseMatrix()
+        vMat = Mat33Util.getViewportMatrix(vpPos, vpDims)
+        cMat = Mat33Util.getCamMatrix(camTransform, camDims)
+
         mMat = starTransform.getMatrix()
         
-        res = map(lambda v: vMat * cMat * mMat * v, vecStar)
-        resPt = map(lambda v: map(int, [v.x, v.y]), res)
+        starRes = map(lambda v: vMat * cMat * mMat * v, vecStar)
+        starResPt = map(lambda v: map(int, [v.x, v.y]), starRes)
 
-        centerRes = vMat * cMat * center # note that mMat is just Identity for center
+        centerRes = vMat * cMat * center # mMat is just Identity for center
         centerResPt = map(int, [centerRes.x, centerRes.y])
-        
+
+        crossHairRes = map(lambda v: vMat * cMat * camTransform.getMatrix() * v, genCrossHair(10))
+        crossHairResPt = map(lambda v: map(int, [v.x, v.y]), crossHairRes)
+
+        vpRect = Rect(*map(int, [vpPos.x, vpPos.y, vpDims.x, vpDims.y]))
+
         screen.fill((0, 0, 0))
-        draw.polygon(screen, (0, 255, 0), resPt, 2)
+
+        # clip to VP Rect to not render outside
+        screen.set_clip(vpRect)
+        
+        draw.polygon(screen, (0, 255, 0), starResPt, 2)
         
         # we have to account for the camera's scale when showing paths
-        draw.circle(screen, (255, 0, 255), centerResPt, int(150/0.75), 1)
-        draw.circle(screen, (0, 255, 255), centerResPt, int(100/0.75), 1)
+        draw.circle(screen, (255, 0, 255), centerResPt, int(150 / 0.75 * 0.75), 1)
+        draw.circle(screen, (0, 255, 0), centerResPt, int(100 / 0.75 * 0.75), 1)
 
         # origin
         draw.circle(screen, (255, 0, 0), centerResPt, 5)
 
         # camera cross-hair
-        crossHairSize = 10
-        draw.line(screen, (0, 255, 0), (400, 300 - crossHairSize), (400, 300 + crossHairSize), 2)
-        draw.line(screen, (0, 255, 0), (400 - crossHairSize, 300), (400 + crossHairSize, 300) , 2)
-        
+        draw.line(screen, (0, 255, 255), crossHairResPt[0], crossHairResPt[1], 2)
+        draw.line(screen, (0, 255, 255), crossHairResPt[2], crossHairResPt[3] , 2)
+
+        # draw the viewport rect
+        draw.rect(screen, (255, 255, 255), vpRect, 2)
+
+        # free up the screen clipping
+        screen.set_clip(None)
+
         display.flip()
         
         myClock.tick(60)
