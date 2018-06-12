@@ -26,7 +26,7 @@ class BOTTestGen(BOTFSM):
         self.bar += 1
         if self.bar == self.foo:
             self.bar = 0
-            self.getFSM().transitionToState("mid_state")
+            self.transitionToState("mid_state")
 
     @staticmethod
     def __start_stateLateUpdate(self):
@@ -58,7 +58,7 @@ class BOTTestGen(BOTFSM):
         self.bar += 1
         if self.bar == self.foo:
             self.bar = 0
-            self.getFSM().transitionToState("end_state")
+            self.transitionToState("end_state")
 
     @staticmethod
     def __mid_stateLateUpdate(self):
@@ -90,40 +90,45 @@ class BOTTestGen(BOTFSM):
         self.bar += 1
         if self.bar == self.foo:
             self.bar = 0
-            self.getFSM().transitionToState("start_state")
+            self.transitionToState("start_state")
 
     @staticmethod
     def __end_stateLateUpdate(self):
         print "LateUpdate of current state %s"%(self.getName())
 
-
-    def init(self):
+    def FSMInit(self):
         states = [
-            BOTFSMState(self, "start_state",
-                {
-                    "init" : self.__start_stateInit,
-                    "transitionFrom" : self.__start_stateTransitionFrom,
-                    "transitionTo" : self.__start_stateTransitionTo,
-                    "update" : self.__start_stateUpdate,
-                    "lateUpdate" : self.__start_stateLateUpdate,
-                }),
-            BOTFSMState(self, "mid_state",
-                {
-                    "init" : self.__mid_stateInit,
-                    "transitionFrom" : self.__mid_stateTransitionFrom,
-                    "transitionTo" : self.__mid_stateTransitionTo,
-                    "update" : self.__mid_stateUpdate,
-                    "lateUpdate" : self.__mid_stateLateUpdate,
-                }),
-            BOTFSMState(self, "end_state",
-                {
-                    "init" : self.__end_stateInit,
-                    "transitionFrom" : self.__end_stateTransitionFrom,
-                    "transitionTo" : self.__end_stateTransitionTo,
-                    "update" : self.__end_stateUpdate,
-                    "lateUpdate" : self.__end_stateLateUpdate,
-                })
-            ]
+                    {
+                        "name" : "start_state",
+                        "methods" : {
+                            "init" : self.__start_stateInit,
+                            "transitionFrom" : self.__start_stateTransitionFrom,
+                            "transitionTo" : self.__start_stateTransitionTo,
+                            "update" : self.__start_stateUpdate,
+                            "lateUpdate" : self.__start_stateLateUpdate,
+                        }
+                    },
+                    {
+                        "name" : "mid_state",
+                        "methods" : {
+                            "init" : self.__mid_stateInit,
+                            "transitionFrom" : self.__mid_stateTransitionFrom,
+                            "transitionTo" : self.__mid_stateTransitionTo,
+                            "update" : self.__mid_stateUpdate,
+                            "lateUpdate" : self.__mid_stateLateUpdate,
+                        }
+                    },
+                    {
+                        "name" : "end_state",
+                        "methods" : {
+                            "init" : self.__end_stateInit,
+                            "transitionFrom" : self.__end_stateTransitionFrom,
+                            "transitionTo" : self.__end_stateTransitionTo,
+                            "update" : self.__end_stateUpdate,
+                            "lateUpdate" : self.__end_stateLateUpdate,
+                        }
+                    }
+                ]
         initState = "start_state"
         return [initState, states]
 

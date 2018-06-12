@@ -1,11 +1,13 @@
-class BOTFSM: # extends BOTGameObjectComponent
-    def __init__(self):
-        initStateKey, states = self.init()
+class BOTFSM:
+    def __init__(self, context=None):
+        if context == None:
+            context = self
+        initStateKey, states = self.FSMInit()
         self.__states = {}
         for s in states:
-            if s.getName() in self.__states:
+            if s['name'] in self.__states:
                 raise Exception('Error, state %s is defined twice when initializing BOTFSM %s.'%(s.getName(), self.__class__.__name__))
-            self.__states[s.getName()] = s
+            self.__states[s['name']] = _BOTFSMState(self, s['name'], s['methods'], context)
             
         if initStateKey not in self.__states:
             raise Exception('Error, starting state %s is not in %s states [%s]'%(initStateKey, self.__class__.__name__, ", ".join(self.__states.keys())))
@@ -17,7 +19,7 @@ class BOTFSM: # extends BOTGameObjectComponent
         init must return a tuple containing a
         the initial state key, and a list of states belonging to the FSM
     """
-    def init(self):
+    def FSMInit(self):
         raise Exception('Error, %s must define BOTFSM initStates'%self.__class__.__name__)
 
     def transitionToState(self, stateKey):
@@ -37,7 +39,7 @@ class BOTFSM: # extends BOTGameObjectComponent
             newState.transitionFrom(self.__currentState)
             self.__currentState = newState
         
-class BOTFSMState:
+class _BOTFSMState:
     """
         meths must be a dict of methods
         which are implementations of the following:
@@ -47,7 +49,7 @@ class BOTFSMState:
         update(self, deltaTime)
         lateUpdate(self)
     """
-    def __init__(self, fsm, name, meths):
+    def __init__(self, fsm, name, meths, context):
         self.__fsm = fsm
         self.__name = name
         meths["init"](self)
@@ -55,6 +57,7 @@ class BOTFSMState:
         self.__transitionTo = meths["transitionTo"]
         self.__update = meths["update"]
         self.__lateUpdate = meths["lateUpdate"]
+        self.__context = context
 
     def getName(self):
         return self.__name
@@ -71,5 +74,8 @@ class BOTFSMState:
     def lateUpdate(self):
         self.__lateUpdate(self)
 
-    def getFSM(self):
-        return self.__fsm
+    def transitionToState(self, stateKey):
+        self.__fsm.transitionToState(stateKey)
+
+    def getContext(self):
+        return self.__context

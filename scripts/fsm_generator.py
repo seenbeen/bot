@@ -34,22 +34,23 @@ for state in stateNames:
         fopen.write(" "*4 + "def __%s%s(%s):\n"%(state, meth[0], "self" + ", "*(len(meth[1]) > 0) + ", ".join(meth[1])))
         fopen.write(" "*8 + "pass\n")
         fopen.write("\n")
-    fopen.write("\n")
 
 # now for the init function that links everything
-fopen.write(" "*4 + "def init(self):\n")
+fopen.write(" "*4 + "def FSMInit(self):\n")
 fopen.write(" "*8 + "states = [\n")
 tempStates = []
 for state in stateNames:
     tempState = ""
-    tempState += (" "*12 + "BOTFSMState(self, \"%s\",\n"%(state))
-    tempState += (" "*16 + "{\n")
+    tempState += (" "*20 + "{\n")
+    tempState += (" "*24 + "\"name\" : \"%s\",\n"%(state))
+    tempState += (" "*24 + "\"methods\" : {\n")
     for meth in ["init", "transitionFrom", "transitionTo", "update", "lateUpdate"]:
-        tempState += (" "*20 + "\"%s\" : self.__%s%s,\n"%(meth,state,meth[0].upper()+meth[1:]))
-    tempState += (" "*16 + "})")
+        tempState += (" "*28 + "\"%s\" : self.__%s%s,\n"%(meth,state,meth[0].upper()+meth[1:]))
+    tempState += (" "*24 + "}\n")
+    tempState += (" "*20 + "}")
     tempStates.append(tempState)
 fopen.write(",\n".join(tempStates)+"\n")
-fopen.write(" "*12 + "]\n")
+fopen.write(" "*16 + "]\n")
 fopen.write(" "*8 + "initState = \"%s\"\n"%(startState))
 fopen.write(" "*8 + "return [initState, states]\n")
 
