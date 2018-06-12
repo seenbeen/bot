@@ -45,6 +45,9 @@ class Vector2:
     def __idiv__(self, primitive):
         return self / primitive
 
+    def __neg__(self):
+        return self * (-1)
+
     def __abs__(self):
         return math_sqrt(Vector2.dot(self, self))
     
@@ -138,11 +141,16 @@ class Mat33Util:
         return result
 
     @staticmethod
-    def getCamToViewportMatrix(camDims, vpDims):
-        return (Mat33Util.getTranslationMatrix(0, vpDims.y) *
+    def getCamMatrix(camTransform, camDims):
+        return (Mat33Util.getScaleMatrix(1.0 / camDims.x, 1.0 / camDims.y) *
+                camTransform.getInverseMatrix())
+
+    @staticmethod
+    def getViewportMatrix(vpPosition, vpDims):
+        '''vpDims [Vector2], vpPosition [Vector2] - in ScreenSpace coordinates''' 
+        return (Mat33Util.getTranslationMatrix(vpPosition.x, vpDims.y + vpPosition.y) *
                 Mat33Util.getScaleMatrix(vpDims.x, -vpDims.y) *
-                Mat33Util.getTranslationMatrix(0.5, 0.5) *
-                Mat33Util.getScaleMatrix(1.0 / camDims.x, 1.0 / camDims.y))
+                Mat33Util.getTranslationMatrix(0.5, 0.5))
 
 class Transform:
     '''
