@@ -1,5 +1,19 @@
 from bot_framework.bot_fsm import *
 
+class MyContextClass:
+    def __init__(self, FSMClass, quack):
+        self.quack = quack
+        self.fsm = FSMClass(self)
+
+    def duck(self):
+        print "\t\t\t\t\t\t\t\t%s" % self.quack
+
+    def update(self, deltaTime):
+        self.fsm.update(deltaTime)
+
+    def lateUpdate(self):
+        self.fsm.lateUpdate()
+
 class BOTFSMTestClass(BOTFSM):
     # standByState
     @staticmethod
@@ -21,12 +35,13 @@ class BOTFSMTestClass(BOTFSM):
 
     @staticmethod
     def __standbyUpdate(self, deltaTime):
+        self.getContext().duck() # use method from context
         print "Updating current state %s, with deltaTime = %.2f"%(self.getName(), deltaTime)
         print "bar = %i"%self.bar
         self.bar += 1
         if self.bar == self.foo:
             self.bar = 0
-            self.getFSM().transitionToState("walking")
+            self.transitionToState("walking")
 
     @staticmethod
     def __standbyLateUpdate(self):
@@ -57,37 +72,41 @@ class BOTFSMTestClass(BOTFSM):
         self.bar += 1
         if self.bar == self.foo:
             self.bar = 0
-            self.getFSM().transitionToState("standby")
+            self.transitionToState("standby")
 
     @staticmethod
     def __walkingLateUpdate(self):
         print "LateUpdate of current state %s"%(self.getName())
 
-    def init(self):
+    def FSMInit(self):
         states = [
-            BOTFSMState(self, "standby",
-                {
-                    "init" : self.__standbyInit,
-                    "transitionFrom" : self.__standbyTransitionFrom,
-                    "transitionTo" : self.__standbyTransitionTo,
-                    "update" : self.__standbyUpdate,
-                    "lateUpdate" : self.__standbyLateUpdate
-                }),
-            BOTFSMState(self, "walking",
-                {
-                    "init" : self.__walkingInit,
-                    "transitionFrom" : self.__walkingTransitionFrom,
-                    "transitionTo" : self.__walkingTransitionTo,
-                    "update" : self.__walkingUpdate,
-                    "lateUpdate" : self.__walkingLateUpdate
-                })
-            ]
+                    {
+                        "name" : "standby",
+                        "methods" : {
+                            "init" : self.__standbyInit,
+                            "transitionFrom" : self.__standbyTransitionFrom,
+                            "transitionTo" : self.__standbyTransitionTo,
+                            "update" : self.__standbyUpdate,
+                            "lateUpdate" : self.__standbyLateUpdate
+                        }
+                    },
+                    {
+                        "name" : "walking",
+                        "methods" : {
+                            "init" : self.__walkingInit,
+                            "transitionFrom" : self.__walkingTransitionFrom,
+                            "transitionTo" : self.__walkingTransitionTo,
+                            "update" : self.__walkingUpdate,
+                            "lateUpdate" : self.__walkingLateUpdate
+                        }
+                    }
+                ]
         initState = "standby"
         return [initState, states]
 
 def run():
-    myFSM = BOTFSMTestClass()
+    class_using_fsm = MyContextClass(BOTFSMTestClass, "Quackles!")
 
     for i in range(20):
-        myFSM.update(float(i))
-        myFSM.lateUpdate()
+        class_using_fsm.update(float(i))
+        class_using_fsm.lateUpdate()
