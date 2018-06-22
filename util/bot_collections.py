@@ -112,3 +112,23 @@ class LLNode:
         if self.hasNext():
             self.tail.head = self.head
         return self.tail
+
+"""Common Dictionary Manipulation Methods with safety throw"""
+class DictUtil:
+    @staticmethod
+    def tryFetch(d, key, failMessage=None):
+        if key in d:
+            return d[key]
+        raise Exception(['Trying to fetch non-existent key %s from Dict.'%key, failMessage][failMessage != None])
+
+    @staticmethod
+    def tryStrictInsert(d, key, val, failMessage=None):
+        if key in d:
+            raise Exception(['Trying to insert existing key %s into Dict.'%key, failMessage][failMessage != None])
+        d[key] = val
+
+    @staticmethod
+    def tryRemove(d, key, failMessage=None):
+        if key in d:
+            return d.pop(key)
+        raise Exception(['Trying to remove non-existent key %s from Dict.'%key, failMessage][failMessage != None])
