@@ -1,7 +1,7 @@
 import time
-from util.pattern.bot_singleton import Singleton
-from util.pattern.bot_eventqueue import *
 from util.bot_collections import DictUtil
+from util.pattern.bot_eventqueue import EventQueue
+from util.pattern.bot_singleton import Singleton
 
 class GameAppImpl:
     def initialize(self):
@@ -106,10 +106,10 @@ class Component(object):
 class ScriptComponent(object):
     def __init__(self, name):
         self.__name = name
-        self.gameObjectParent = None
+        self.__gameObject = None
         
     def _setParent(self, gameObjectParent):
-        self.gameObjectParent = gameObjectParent
+        self.__gameObject = gameObjectParent
         self.onBind()
         
     def onBind(self):
@@ -123,6 +123,9 @@ class ScriptComponent(object):
     
     def getName(self):
         return self.__name
+    
+    def getGameObject(self):
+        return self.__gameObject
 
 def __GameObjectQueue():
     QUEUED_METHODS = [GameObject.addComponent, GameObject.removeComponent]

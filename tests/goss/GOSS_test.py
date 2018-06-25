@@ -1,7 +1,7 @@
 import time, sys
 import pygame
-from bot_framework.bot_inputmanager import *
 from bot_framework.bot_GOSS import *
+from bot_framework.bot_inputmanager import *
 
 class TestGameApp(GameAppImpl):
     def initialize(self):
@@ -50,7 +50,7 @@ class DeltaTimePrinter(ScriptComponent):
         pass
 
     def onBind(self):
-        assert self.gameObjectParent.getName() == "DeltaTimePrinterObject", "Parent is incorrect for component"
+        assert self.getGameObject().getName() == "DeltaTimePrinterObject", "Parent is incorrect for component"
 
 def run():
     GameApplication.initialize(TestGameApp)
