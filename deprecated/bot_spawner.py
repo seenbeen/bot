@@ -18,7 +18,6 @@ class Spawner(Component):
     def __spawn(self):
         self.__gameState.addObject(self.__toSpawn, "Enemy")
         
-        
     def update(self,dt): # gameSections = [[[enemy,enemy,enemy],"rapid"], [[enemy,enemy,enemy],"continuous"]]
         """
         todo: spawn multiple enemies at a time
@@ -37,4 +36,3 @@ class Spawner(Component):
     def lateUpdate(self, dt):
         if (self.__toSpawn != None):
             self.__spawn()
-                

@@ -1,6 +1,8 @@
 import time
 from bot_framework.bot_fsm import *
 from util.pattern.bot_singleton import Singleton
+from util.pattern.bot_eventqueue import *
+from util.bot_collections import DictUtil
 
 class GameAppImpl:
     def initialize(self):
@@ -39,25 +41,18 @@ class GameApplication:
             
             for gObj in self.__gameObjects:
                 self.__gameObjects[gObj].lateUpdate()
-                
+            
+            self.pump()
         self.__impl.shutdown()
         
     def addObject(self, obj):
-        if (obj.name in self.__gameObjects):
-            raise Exception('Error, %s gameobject has been added to a game object multiple times'%obj.name)
-        self.__gameObjects[obj.name] = obj
+        DictUtil.tryStrictInsert(self.__gameObjects, obj.name, obj, "GameObject: %s already exists inside of GameApplication"%obj.name)
     
     def removeObject(self, name):
-        if (name in self.__gameObjects):
-            del self.__gameObjects[name]
-        else:
-            raise Exception('Error, Attempting to delete non-existent component:%s from game object'%name)
-    
-    def getGameObjects(self):
-        return self.__gameObjects
+        DictUtil.tryRemove(self.__gameObjects, name, "GameObject: %s is trying to be removed from GameApplication but does not exist"%name)
     
     def getGameObject(self, name):
-        return self.__gameObjects[name]
+        return DictUtil.tryFetch(self.__gameObjects, name, "Gameobject: %s being fetched does not exist"%name)
     
     def quit(self):
         self.__running = False
@@ -70,17 +65,15 @@ class GameObject(object):
             self.addComponent(comp)
         
     def addComponent(self, comp):
-        if (comp.name in self.__components):
-            raise Exception('Error, %s component has been added to a game object multiple times'%comp.name)
-        self.__components[comp.name] = comp
+        DictUtil.tryStrictInsert(self.__components, comp.name, comp, "Component: %s already exists inside of GameObject"%comp.name)
         if (isinstance(comp, ScriptComponent)):
             comp._setParent(self)
         
     def removeComponent(self, name):
-        if (name in self.__components):
-            del self.__components[name]
-        else:
-            raise Exception('Error, Attempting to delete non-existent component:%s from game object'%name)
+        DictUtil.tryRemove(self.__components, name, "Component: %s is trying to be removed from %s but does not exist"%name,__class__.name)
+    
+    def getComponent(self, name):
+        return DictUtil.tryFetch(self.__components, name, "Component: %s being fetched does not exist"%name) 
     
     def update(self, dt):
         for comp in self.__components:
@@ -89,11 +82,10 @@ class GameObject(object):
     def lateUpdate(self):
         for comp in self.__components:
             self.__components[comp].lateUpdate()
+        self.pump()
             
     def destroy(self):
-        for comp in self.__components:
-            self.removeComponent(comp.name)
-        self.__del__()
+        GameApplication.instance().removeObject(self.name)
           
 class Component(object):
     def __init__(self, name):
@@ -112,11 +104,67 @@ class ScriptComponent(object):
         
     def _setParent(self, gameObjectParent):
         self.gameObjectParent = gameObjectParent
+        self.onBind()
+        
+    def onBind(self):
+        pass
 
     def update(self, deltaTime):
         raise Exception('Error, %s must define a update method'%self.__class__.__name__)
 
     def lateUpdate(self):
         raise Exception('Error, %s must define a late update method'%self.__class__.__name__)
+
+def __GameObjectQueue():
+    QUEUED_METHODS = [GameObject.addComponent, GameObject.removeComponent, GameObject.destroy]
+
+    ADD_METH = GameObject.addComponent.__name__
+    REMOVE_METH = GameObject.removeComponent.__name__
+    DESTROY_METH = GameObject.destroy.__name__
+
+    KIND_ORDER = {}
+    METHOD_ORDER = {ADD_METH : 0, REMOVE_METH: 1, DESTROY_METH : 2}
+    
+    def pumpCompare(eventA, eventB):
+        
+        if eventA.name != eventB.name:
+            return (METHOD_ORDER[eventA.name] - METHOD_ORDER[eventB.name])
+
+        if eventA.name == ADD_METH:
+            return 0
+        elif eventA.name == REMOVE_METH:
+            return 1
+        elif eventA.name == DESTROY_METH:
+            return 2
+        else:
+            raise Exception("Unexpected method %s being pumped!"%eventA.name)
+
+    EventQueue.enQueueify(GameObject, QUEUED_METHODS, pumpCompare)
+
+def __GameAppQueue():
+    QUEUED_METHODS = [GameApplication.addObject, GameApplication.removeObject]
+
+    ADD_METH = GameApplication.addObject.__name__
+    REMOVE_METH = GameApplication.removeObject.__name__
+
+    KIND_ORDER = {}
+    METHOD_ORDER = {ADD_METH : 0, REMOVE_METH: 1}
+    
+    def pumpCompare(eventA, eventB):
+        
+        if eventA.name != eventB.name:
+            return (METHOD_ORDER[eventA.name] - METHOD_ORDER[eventB.name])
+
+        if eventA.name == ADD_METH:
+            return 0
+        elif eventA.name == REMOVE_METH:
+            return 1
+        else:
+            raise Exception("Unexpected method %s being pumped!"%eventA.name)
+
+    EventQueue.enQueueify(GameApplication, QUEUED_METHODS, pumpCompare)
+    
+__GameAppQueue()    
+__GameObjectQueue()
 
 Singleton.transformToSingleton(GameApplication)
