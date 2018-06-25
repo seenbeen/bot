@@ -50,7 +50,7 @@ class DeltaTimePrinter(ScriptComponent):
         pass
 
     def onBind(self):
-        assert self.gameObjectParent.name == "DeltaTimePrinterObject", "Parent is incorrect for component"
+        assert self.gameObjectParent.getName() == "DeltaTimePrinterObject", "Parent is incorrect for component"
 
 def run():
     GameApplication.initialize(TestGameApp)
@@ -58,3 +58,5 @@ def run():
     GameApplication.instance().run()
 
     GameApplication.shutdown()
+
+
