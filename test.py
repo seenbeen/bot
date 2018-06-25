@@ -1,4 +1,5 @@
 import sys
+import traceback
 
 if len(sys.argv) == 1:
     print "Usage: %s <path-to-test1.py> <path-to-test2.py> ... <path-to-testn.py>"%(sys.argv[0])
@@ -19,7 +20,7 @@ for test in testNames:
         print "Running %s..."%(test)
         eval(test+".run()")
     except Exception as e:
-        failures.append(test + " : "+ str(e))
+        failures.append([test, sys.exc_info()])
 
 # skip a line to make output cleaner
 print ""
@@ -27,7 +28,12 @@ print ""
 if failures:
     print "Testing Failed :<\n"
     print "The following tests failed:\n"
-    print "\n".join(failures)
+    for fail in failures:
+        print fail[0]
+        print "------------Stack Trace------------"
+        traceback.print_exception(*fail[1])
+        del fail[1]
+        print "------------------------------------------------\n"
 else:
     print "All tests passed! :DD"
         
