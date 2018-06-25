@@ -29,8 +29,14 @@ class Singleton:
                 raise Exception("Singleton has not been initialized(%s)"%cls.__name__)
             return cls.__instance
         
+        try:
+            if (className.initialize != None):
+                raise Exception("%s is already a singleton or has a static initialize method"%className.__name__)
+        except AttributeError:
+            pass
+        
         className.initialize = initialize
         className.shutdown = shutdown
         className.instance = instance
         className.__instance = None
-        
+

@@ -35,3 +35,4 @@ def testShutdown():
     except Exception:
         return
     raise Exception("Failed, shutdown called twice")
+
