@@ -52,12 +52,13 @@ class _BOTFSMState:
     def __init__(self, fsm, name, meths, context):
         self.__fsm = fsm
         self.__name = name
+        self.__context = context
         meths["init"](self)
         self.__transitionFrom = meths["transitionFrom"]
         self.__transitionTo = meths["transitionTo"]
         self.__update = meths["update"]
         self.__lateUpdate = meths["lateUpdate"]
-        self.__context = context
+        
 
     def getName(self):
         return self.__name

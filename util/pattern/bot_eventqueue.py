@@ -70,7 +70,7 @@ class EventQueue:
                 raise Exception("Attempting to enqueuify non-existent instance method " +
                                 "'%s' in class '%s'!"%(m.__name__, className.__name__))
 
-            className.__dict__[mName] = EventQueue.__pumpifyMethod(m)
+            setattr(className, mName, EventQueue.__pumpifyMethod(m))
 
         def __init__(self, *args):
             self.__dict__[EventQueue.__QUEUE_KEY] = []
@@ -83,7 +83,8 @@ class EventQueue:
                 EventQueue.__CALL_STACK_PUMP_METHOD = x.name
                 x.call()
             EventQueue.__CALL_STACK_PUMP_METHOD = None
+            del evtQueue[:]
 
         className.__init__ = __init__
         className.pump = pump
-        className.__dict__[EventQueue.__ENQUEUEIFIED] = True
+        setattr(className, EventQueue.__ENQUEUEIFIED, True )

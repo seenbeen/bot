@@ -2,31 +2,32 @@ import pygame
 from bot_fsm import *
 from util.bot_math import Vector2
 from util.pattern.bot_singleton import Singleton
-   
+
 class InputManager(BOTFSM):
     KEYS = 0
     EVENTS = 1
     MOUSEPOS = 2
     MOUSEBUTTONS = 3
 
+    # running
     @staticmethod
     def __runningInit(self):
-        self.getFSM().resetInputs()
+        self.getContext().resetInputs()
 
     @staticmethod
     def __runningTransitionFrom(self, fromState):
-        self.getFSM().resetInputs()
+        self.getContext().resetInputs()
 
     @staticmethod
     def __runningTransitionTo(self, toState):
-        self.getFSM().resetInputs()
+        self.getContext().resetInputs()
 
     @staticmethod
     def __runningUpdate(self, deltaTime):
-        self.getFSM().setInputs(pygame.event.get(), InputManager.EVENTS)
-        self.getFSM().setInputs(pygame.key.get_pressed(), InputManager.KEYS)
-        self.getFSM().setInputs(pygame.mouse.get_pos(), InputManager.MOUSEPOS)
-        self.getFSM().setInputs(pygame.mouse.get_pressed(), InputManager.MOUSEBUTTONS)
+        self.getContext().setInputs(pygame.event.get(), InputManager.EVENTS)
+        self.getContext().setInputs(pygame.key.get_pressed(), InputManager.KEYS)
+        self.getContext().setInputs(pygame.mouse.get_pos(), InputManager.MOUSEPOS)
+        self.getContext().setInputs(pygame.mouse.get_pressed(), InputManager.MOUSEBUTTONS)
 
     @staticmethod
     def __runningLateUpdate(self):
@@ -66,19 +67,20 @@ class InputManager(BOTFSM):
                 events.append(evt)
         return events
     
-    def init(self):
+    def FSMInit(self):
         states = [
-            BOTFSMState(self, "running",
-                {
-                    "init" : self.__runningInit,
-                    "transitionFrom" : self.__runningTransitionFrom,
-                    "transitionTo" : self.__runningTransitionTo,
-                    "update" : self.__runningUpdate,
-                    "lateUpdate" : self.__runningLateUpdate,
-                })
-            ]
+                    {
+                        "name" : "running",
+                        "methods" : {
+                            "init" : self.__runningInit,
+                            "transitionFrom" : self.__runningTransitionFrom,
+                            "transitionTo" : self.__runningTransitionTo,
+                            "update" : self.__runningUpdate,
+                            "lateUpdate" : self.__runningLateUpdate,
+                        }
+                    }
+                ]
         initState = "running"
         return [initState, states]
     
 Singleton.transformToSingleton(InputManager)
-    
