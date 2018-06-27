@@ -1,6 +1,5 @@
 import sys
 import os
-import fnmatch
 '''
 Limitations of the parser:
 
@@ -15,27 +14,25 @@ def usage():
     print "Usage: python %s <output_file_name> <dir_to_search> <dir_to_exclude> <dir_to_exclude> ..."%sys.argv[0]
     sys.exit(-1)
 
-os.chdir(os.path.dirname(sys.argv[0])+"/..")
-
 argc = len(sys.argv)
 if argc <= 1:
     usage()
-    
+ 
+f = open(sys.argv[1]+".botal", "w+")
+   
+os.chdir(os.path.dirname(sys.argv[2]))
+  
 def filterPyInit(filename):
     return (filename.endswith('.py') and not filename.startswith('__init__'))
 
 excludeDir = []
+
 if argc >= 3:
     for i in range(argc-3):
         excludeDir.append(sys.argv[i+3])
 
 matches = []
-
-dirPrefix = sys.argv[2]
-if dirPrefix == ".":
-    dirPrefix = ""
-    
-for root, dirnames, filenames in os.walk(dirPrefix):
+for root, dirnames, filenames in os.walk("."):
     [dirnames.remove(d) for d in list(dirnames) if d in excludeDir]
     for filename in filter(filterPyInit, filenames):
         matches.append(os.path.join(root, filename))
@@ -48,14 +45,11 @@ for match in matches:
         if searchLine in line:
             start = line.find("AssetManager.instance().loadAsset(\"") + len("AssetManager.instance().loadAsset(\"")
             end = line.rfind("\")")
-            if (line[start:end][0] == "/" or line[start:end][0] == "\\"):
-                assetLines.add((line[start+1:end]))
-            else:
-                assetLines.add((line[start:end]))
+            assetLines.add(line[start:end])
     file.close()
 
-f = open(sys.argv[1]+".botal", "w+")
 for asset in assetLines:
     f.write("%s\n"%asset)
 
 f.close()
+
