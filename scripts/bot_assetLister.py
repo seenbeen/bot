@@ -40,13 +40,13 @@ for root, dirnames, filenames in os.walk("."):
 searchLine = "AssetManager.instance().loadAsset("
 assetLines = set()
 for match in matches:
-    file = open(match, "r")
-    for line in file:
+    pyfile = open(match, "r")
+    for line in pyfile:
         if searchLine in line:
             start = line.find("AssetManager.instance().loadAsset(\"") + len("AssetManager.instance().loadAsset(\"")
             end = line.rfind("\")")
             assetLines.add(line[start:end])
-    file.close()
+    pyfile.close()
 
 for asset in assetLines:
     f.write("%s\n"%asset)
