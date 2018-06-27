@@ -3,12 +3,14 @@ from pygame import Surface
 from util.bot_assetManager import AssetManager
 
 def run():
+    os.system("python scripts/bot_assetLister.py tests/assetmanager/assetsList tests/")
     AssetManager.initialize()
-    AssetManager.instance().assetPath = "assets/"
+    AssetManager.instance().assetPath = "tests/assetmanager/"
 
     AssetManager.instance().loadCallbacks()
-    AssetManager.instance().load()
+    AssetManager.instance().load("tests/assetmanager/assetsList")
 
-    assert isinstance(AssetManager.instance().loadAsset("tests/test.png"), Surface), "test.png failed to load"
-    assert isinstance(AssetManager.instance().loadAsset("tests/test.jpg"), Surface), "test.jpg failed to load"
-    assert AssetManager.instance().ext['.jpg'] == AssetManager.instance().ext['.png'], "callbacks failed to load properly"
+    assert isinstance(AssetManager.instance().loadAsset("test.png"), Surface), "test.png failed to load"
+    assert isinstance(AssetManager.instance().loadAsset("test.jpg"), Surface), "test.jpg failed to load"
+    assert isinstance(AssetManager.instance().loadAsset("test.jpg"), Surface), "test.jpg failed to load" #This is actually a duplicate load check
+    

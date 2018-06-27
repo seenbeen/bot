@@ -1,32 +1,32 @@
 import os
-from pattern.bot_singleton import Singleton
-from bot_collections import DictUtil
 from pygame import image
+from bot_collections import DictUtil
+from pattern.bot_singleton import Singleton
 
 class AssetManager(object):
 
     def __init__(self):
         self.assetPath = "../assets/"
-        self.ext = {}
-        self.assets = {}
+        self.__ext = {}
+        self.__assets = {}
 
-    def load(self):
-        f = open(os.path.join(self.assetPath, "assetslist"),"r")
+    def load(self, listPath):
+        f = open(listPath+".botal","r")
         for bpath in f:
             path = bpath.rstrip()
-            callback = DictUtil.tryFetch(self.ext, os.path.splitext(path)[1])
+            callback = DictUtil.tryFetch(self.__ext, os.path.splitext(path)[1])
             asset = callback(os.path.join(self.assetPath, path))
-            DictUtil.tryStrictInsert(self.assets, path, asset)
+            DictUtil.tryStrictInsert(self.__assets, path, asset)
 
     def loadCallbacks(self):
         self.loadTypeCallback(".jpg", AssetManager.loadIMG)
         self.loadTypeCallback(".png", AssetManager.loadIMG)
 
     def loadAsset(self, path):
-        return DictUtil.tryFetch(self.assets, path)
+        return DictUtil.tryFetch(self.__assets, path)
 
     def loadTypeCallback(self, extension, callback):
-        DictUtil.tryStrictInsert(self.ext, extension, callback)
+        DictUtil.tryStrictInsert(self.__ext, extension, callback)
 
     @staticmethod
     def loadIMG(path):
