@@ -1,3 +1,6 @@
+import sys
+import os
+import fnmatch
 '''
 Limitations of the parser:
 
@@ -7,22 +10,20 @@ The argument is also not evaluated, load("foo" + "bar") will also not work
 There cannot be a ") on the right of the load call for whatever reason.
 load("foo.bar").foo("bar") will not work
 '''
-import sys, os
-import fnmatch
-
-os.chdir(os.path.dirname(sys.argv[0])+"/..")
-
-def filterPyInit(filename):
-    return (filename.endswith('.py') and not filename.startswith('__init__'))
 
 def usage():
     print "Usage: python %s <output_file_name> <dir_to_search> <dir_to_exclude> <dir_to_exclude> ..."%sys.argv[0]
     sys.exit(-1)
 
+os.chdir(os.path.dirname(sys.argv[0])+"/..")
+
 argc = len(sys.argv)
 if argc <= 1:
     usage()
     
+def filterPyInit(filename):
+    return (filename.endswith('.py') and not filename.startswith('__init__'))
+
 excludeDir = []
 if argc >= 3:
     for i in range(argc-3):
