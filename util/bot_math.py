@@ -66,6 +66,9 @@ class Vector2:
     def cross(VectorA, VectorB):
         return (VectorA.x * VectorB.y) - (VectorA.y * VectorB.x)
 
+    def toIntTuple(self):
+        return map(int, (self.x, self.y))
+
     def __str__(self):
         return "Vector2: (%.2f, %.2f)"%(self.x, self.y)
     

@@ -66,13 +66,13 @@ def run():
         mMat = starTransform.getMatrix()
         
         starRes = map(lambda v: vMat * cMat * mMat * v, vecStar)
-        starResPt = map(lambda v: map(int, [v.x, v.y]), starRes)
+        starResPt = map(Vector2.toIntTuple, starRes)
 
         centerRes = vMat * cMat * center # mMat is just Identity for center
-        centerResPt = map(int, [centerRes.x, centerRes.y])
+        centerResPt = centerRes.toIntTuple()
 
         crossHairRes = map(lambda v: vMat * cMat * camTransform.getMatrix() * v, genCrossHair(10))
-        crossHairResPt = map(lambda v: map(int, [v.x, v.y]), crossHairRes)
+        crossHairResPt = map(Vector2.toIntTuple, crossHairRes)
 
         vpRect = Rect(*map(int, [vpPos.x, vpPos.y, vpDims.x, vpDims.y]))
 
