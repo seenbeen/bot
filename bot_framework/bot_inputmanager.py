@@ -12,7 +12,7 @@ class InputManager(object):
         self.__inputTree = {}
         for prio in listOfPriorities:
             self.__inputTree[prio] = []
-        self.__priority = listOfPriorities
+        self.__priority = listOfPriorities[:]
 
     def update(self, deltaTime):
         for evt in pygame.event.get():
