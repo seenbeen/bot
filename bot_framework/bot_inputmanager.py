@@ -29,7 +29,7 @@ class InputManager(object):
             lst = DictUtil.tryFetch(self.__inputTree, priority, "Priority %s does not exist"%priority)
             lst.append(obj)
         else:
-            raise Exception("%s is not an input listener and cannot be registered to the input manager"%obj.__name__)
+            raise Exception("'%s' is not an input listener and cannot be registered to the input manager"%obj.__class__.__name__)
       
     def lateUpdate(self):
         pass
@@ -45,16 +45,16 @@ class InputListener(object):
                 self.__inputTree.append(obj)
                 obj._parent = self
             else:
-                raise Exception("%s is being registered multiple times"%obj.__class__.__name__)
+                raise Exception("provided object: '%s' is being registered multiple times"%obj.__class__.__name__)
         else:
-            raise Exception("%s is not an input listener and cannot be registered to the input manager"%obj.__class__.__name__)
+            raise Exception("provided object: '%s' is not an input listener and cannot be registered to the input manager"%obj.__class__.__name__)
 
     def registerManager(self, priority):
         if (self._parent == None):
             InputManager.instance()._registerListener(self, priority)
             self._parent = InputManager.instance()
         else:
-            raise Exception("%s is being registered multiple times"%self.__class__.__name__)
+            raise Exception("'%s' is being registered multiple times"%self.__class__.__name__)
 
     def sendEvent(self, evt):
         if self.onEvent(evt):
@@ -65,7 +65,7 @@ class InputListener(object):
         return False
 
     def onEvent(self, evt):
-        raise Exception("Error, 'onEvent' is not implemented in %s."%(self.__class__.__name__))
+        raise Exception("Error, 'onEvent' is not implemented in '%s'."%(self.__class__.__name__))
 
 Singleton.transformToSingleton(InputManager)
 
