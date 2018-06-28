@@ -4,31 +4,30 @@ from util.pattern.bot_singleton import Singleton
 from util.bot_collections import DictUtil
 
 class InputManager(object):
-    UI = 0
-    MENU = 1
-    GAMEOBJECT = 2
-    
     def __init__(self):
         self.__inputTree = {}
+        self.__priority = []
 
-    def setupPriority(self, list):
+    def setupPriority(self, listOfPriorities):
         self.__inputTree = {}
-        for prio in list:
+        for prio in listOfPriorities:
             self.__inputTree[prio] = []
+        self.__priority = listOfPriorities
 
     def update(self, deltaTime):
         for evt in pygame.event.get():
-            self.propogateEvent(evt)
+            self.__propogateEvent(evt)
 
-    def propogateEvent(self, evt):
-        for key in self.__inputTree:
+    def __propogateEvent(self, evt):
+        for key in self.__priority:
             for obj in self.__inputTree[key]:
                 if obj.sendEvent(evt):
                     return
       
-    def registerListener(self, obj, priority):
+    def _registerListener(self, obj, priority):
         if isinstance(obj, InputListener):
-            DictUtil.tryFetch(self.__inputTree, priority, "Priority %s does not exist"%priority).append(obj)
+            lst = DictUtil.tryFetch(self.__inputTree, priority, "Priority %s does not exist"%priority)
+            lst.append(obj)
         else:
             raise Exception("%s is not an input listener and cannot be registered to the input manager"%obj.__name__)
       
@@ -51,7 +50,11 @@ class InputListener(object):
             raise Exception("%s is not an input listener and cannot be registered to the input manager"%obj.__class__.__name__)
 
     def registerManager(self, priority):
-        InputManager.instance().registerListener(self, priority)
+        if (self._parent == None):
+            InputManager.instance()._registerListener(self, priority)
+            self._parent = InputManager.instance()
+        else:
+            raise Exception("%s is being registered multiple times"%self.__class__.__name__)
 
     def sendEvent(self, evt):
         if self.onEvent(evt):

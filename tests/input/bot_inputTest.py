@@ -38,7 +38,7 @@ def run():
     pygame.init()
     
     InputManager.initialize()
-    InputManager.instance().setupPriority([InputManager.UI, InputManager.MENU, InputManager.GAMEOBJECT])
+    InputManager.instance().setupPriority([0,"foo",2])
     
     pygame.event.clear()
     pygame.event.post(pygame.event.Event(FakeEventA))
@@ -49,7 +49,7 @@ def run():
     B = passB()
     C = passAny()
 
-    A.registerManager(InputManager.MENU)
+    A.registerManager("foo")
     A.addListener(B)
     A.addListener(C)
 
