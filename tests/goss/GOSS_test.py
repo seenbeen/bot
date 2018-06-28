@@ -1,15 +1,10 @@
 import time, sys
 import pygame
 from bot_framework.bot_GOSS import *
-from bot_framework.bot_inputmanager import *
 
 class TestGameApp(GameAppImpl):
     def initialize(self):
-        print "Initializing Game Subsystems"
-        size = (width, height) = 1280, 720
-        self.screen = pygame.display.set_mode(size)
-        InputManager.initialize()
-        
+        self.shutdownCounter = 0
         printer = DeltaTimePrinter("DeltaTimePrinter")
         GameApplication.instance().addObject(GameObject([printer],"DeltaTimePrinterObject"))
         
@@ -21,20 +16,16 @@ class TestGameApp(GameAppImpl):
             raise Exception("DeltaTimePrinterObject should not exist before pump")
 
     def shutdown(self):
-        InputManager.shutdown()
         pygame.quit()
         print "Shutting Down Game Subsystems"
 
     def update(self, deltaTime):
-        self.screen.fill((0,0,0))
-
-        InputManager.instance().update(deltaTime)
-
-        if InputManager.instance().getEvent(pygame.QUIT):
+        self.shutdownCounter+=deltaTime
+        if self.shutdownCounter > 2:
             GameApplication.instance().quit()
-
+            
     def lateUpdate(self):
-        pygame.display.flip()
+        pass
 
 class DeltaTimePrinter(ScriptComponent):
     def __init__(self, name):
@@ -58,5 +49,4 @@ def run():
     GameApplication.instance().run()
 
     GameApplication.shutdown()
-
 
