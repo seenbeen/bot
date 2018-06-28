@@ -4,10 +4,7 @@ from bot_framework.bot_GOSS import *
 
 class TestGameApp(GameAppImpl):
     def initialize(self):
-        print "Initializing Game Subsystems"
-        size = (width, height) = 1280, 720
-        self.screen = pygame.display.set_mode(size)
-        
+        self.shutdownCounter = 0
         printer = DeltaTimePrinter("DeltaTimePrinter")
         GameApplication.instance().addObject(GameObject([printer],"DeltaTimePrinterObject"))
         
@@ -23,16 +20,12 @@ class TestGameApp(GameAppImpl):
         print "Shutting Down Game Subsystems"
 
     def update(self, deltaTime):
-        self.screen.fill((0,0,0))
-
-
-
-        for evt in pygame.event.get():
-            if evt.type == pygame.QUIT:
-                GameApplication.instance().quit()
-
+        self.shutdownCounter+=deltaTime
+        if self.shutdownCounter > 2:
+            GameApplication.instance().quit()
+            
     def lateUpdate(self):
-        pygame.display.flip()
+        pass
 
 class DeltaTimePrinter(ScriptComponent):
     def __init__(self, name):
@@ -56,5 +49,4 @@ def run():
     GameApplication.instance().run()
 
     GameApplication.shutdown()
-
 
