@@ -4,6 +4,7 @@ from math import sin as math_sin
 from math import radians as math_radians
 from math import degrees as math_degrees
 from math import atan2 as math_atan2
+import pygame
 
 def sign(x):
     return [1, -1][x < 0]
@@ -223,3 +224,27 @@ class Transform:
                           abs(tp3 - tp1) / abs(p3 - p1))
         t.scale.y *= sign(Vector2.cross(tp3 - tp1, tp2 - tp1))
         return t
+
+class RectUtil:
+    @staticmethod
+    def findAABB(pts):
+        if len(pts) == 0:
+            raise Exception("Please provide at least one point to method findAABB")
+
+        minX, minY = pts[0].x, pts[0].y
+        maxX, maxY = pts[0].x, pts[0].y
+        
+        for p in pts:
+            minX = min(minX, p.x)
+            minY = min(minY, p.y)
+            maxX = max(maxX, p.x)
+            maxY = max(maxY, p.y)
+
+        return pygame.Rect(map(int, [minX, minY, maxX - minX, maxY - minY]))
+
+    @staticmethod
+    def genRectPts(rect):
+        p = Vector2(rect.x, rect.y)
+        w = Vector2(rect.w, 0)
+        h = Vector2(0, rect.h)
+        return [p, p+w, p+w+h, p+h]

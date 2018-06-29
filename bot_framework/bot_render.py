@@ -4,30 +4,6 @@ from util.bot_math import *
 from util.pattern.bot_singleton import Singleton
 from util.bot_collections import DictUtil
 
-class RectUtil:
-    @staticmethod
-    def findAABB(pts):
-        if len(pts) == 0:
-            raise Exception("Please provide at least one point to method findAABB")
-
-        minX, minY = pts[0].x, pts[0].y
-        maxX, maxY = pts[0].x, pts[0].y
-        
-        for p in pts:
-            minX = min(minX, p.x)
-            minY = min(minY, p.y)
-            maxX = max(maxX, p.x)
-            maxY = max(maxY, p.y)
-
-        return pygame.Rect(map(int, [minX, minY, maxX - minX, maxY - minY]))
-
-    @staticmethod
-    def genRectPts(rect):
-        p = Vector2(rect.x, rect.y)
-        w = Vector2(rect.w, 0)
-        h = Vector2(0, rect.h)
-        return [p, p+w, p+w+h, p+h]
-
 class BOTRenderer:
     def __init__(self, screenWidth, screenHeight):
         self.__screenWidth = screenWidth
@@ -142,7 +118,7 @@ class BOTRenderer:
         removed = DictUtil.tryRemove(self.__renderables, name,
                                      ('Attempting to unregister non-existent '
                                       'Renderable %s from renderer!')%name)
-        if removed != renderable:
+        if removed is not renderable:
             raise Exception('FATAL: Unregistered Renderable does not match provided Renderable despite sharing name "%s"'%name)
 
     '''
@@ -153,7 +129,7 @@ class BOTRenderer:
         removed = DictUtil.tryRemove(self.__scenes, name,
                                      ('Attempting to unregister non-existent '
                                       'Scene %s from renderer!')%name)
-        if removed != scene:
+        if removed is not scene:
             raise Exception('FATAL: Unregistered Scene does not match provided Scene despite sharing name "%s"'%name)
     
     '''
@@ -164,7 +140,7 @@ class BOTRenderer:
         removed = DictUtil.tryRemove(self.__cameras, name,
                                      ('Attempting to unregister non-existent '
                                       'Camera %s from renderer!')%name)
-        if removed != camera:
+        if removed is not camera:
             raise Exception('FATAL: Unregistered Camera does not match provided Camera despite sharing name "%s"'%name)
 
     '''
@@ -175,7 +151,7 @@ class BOTRenderer:
         removed = DictUtil.tryRemove(self.__viewports, name,
                                      ('Attempting to unregister non-existent '
                                       'Viewport %s from renderer!')%name)
-        if removed != viewport:
+        if removed is not viewport:
             raise Exception('FATAL: Unregistered Viewport does not match provided Viewport despite sharing name "%s"'%name)
 
     def update(self, deltaTime):
