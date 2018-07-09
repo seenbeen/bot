@@ -2,6 +2,7 @@ from pygame import Rect as pygame_Rect
 from util.bot_collections import DictUtil
 from util.bot_math import *
 from util.pattern.bot_singleton import Singleton
+from util.pattern.bot_eventqueue import EventQueue
 
 class BOTPhysicsSpace:
     def __init__(self):
@@ -12,31 +13,47 @@ class BOTPhysicsSpace:
         name = rigidBody.getName()
         DictUtil.tryStrictInsert(self.__rigidBodies, name, rigidBody,
                                  ("Attempting to override existing "
-                                  "'BOTRigidBody' '%s' in 'BOTPhysicsSpace'!") % name)
+                                  "'BOTPhysicsRigidBody' '%s' in 'BOTPhysicsSpace'!") % name)
 
     def removeRigidBody(self, rigidBody):
         name = rigidBody.getName()
-        removed = DictUtil.tryRemove(self.__rigidBodies, name, rigidBody,
+        removed = DictUtil.tryRemove(self.__rigidBodies, name,
                                      ("Attempting to remove non-existent "
-                                      "'BOTRigidBody' '%s' from 'BOTPhysicsSpace'!") % name)
+                                      "'BOTPhysicsRigidBody' '%s' from 'BOTPhysicsSpace'!") % name)
 
         if removed is not rigidBody:
             raise Exception("FATAL: Unregistered 'BOTRigidBody' does not match provided "
-                            "'BOTRigidBody' despite sharing name '%s'" % name)
+                            "'BOTPhysicsRigidBody' despite sharing name '%s'" % name)
+    def addResolver(self, resolver):
+        resolverTuple = resolver.getResolverTuple()
+        DictUtil.tryStrictInsert(self.__resolvers, resolverTuple, resolver,
+                                 ("Attempting to override existing "
+                                  "'BOTPhysicsResolver' with ResolverTuple '%s' in 'BOTPhysicsSpace'!") % resolverTuple)
+
+    def removeResolver(self, resolver):
+        resolverTuple = resolver.getResolverTuple()
+        removed = DictUtil.tryRemove(self.__resolvers, resolverTuple,
+                                     ("Attempting to remove non-existent "
+                                      "'BOTPhysicsResolver' with ResolverTuple '%s' from 'BOTPhysicsSpace'!") % resolverTuple)
+
+        if removed is not resolver:
+            raise Exception("FATAL: Unregistered 'BOTPhysicsResolver' does not match provided "
+                            "'BOTPhysicsResolver' despite sharing ResolverTuple '%s'" % resolverTuple)
 
     def update(self, deltaTime):
         for rboKey in self.__rigidBodies:
-            self.__rigidBodies[rboKey].update(deltaTime)
+            self.__rigidBodies[rboKey]._update(deltaTime)
 
-        n = len(self.__objects)
+        n = len(self.__rigidBodies)
+        keys = self.__rigidBodies.keys()
         for i in range(n):
-            objA = self.__objects[i]
+            rbA = self.__rigidBodies[keys[i]]
             for j in range(i+1, n):
-                objB = self.__objects[j]
-                if objA._collidesWith(objB):
-                    resolverTuple = PhysicsCollisionResolverTuple(objA.getTag(), objB.getTag())
+                rbB = self.__rigidBodies[keys[j]]
+                if rbA._collidesWith(rbB):
+                    resolverTuple = BOTPhysicsCollisionResolverTuple(rbA.getTag(), rbB.getTag())
                     if resolverTuple in self.__resolvers:
-                        self.__resolvers[resolverTuple]._resolve(objA, objB)
+                        self.__resolvers[resolverTuple]._resolve(rbA, rbB)
 
     def lateUpdate(self):
         self.pump()
@@ -44,26 +61,31 @@ class BOTPhysicsSpace:
 Singleton.transformToSingleton(BOTPhysicsSpace)
 
 def __BOTPhysicsSpaceQueue():
-    QUEUED_METHODS = [BOTPhysicsSpace.addRigidBody, BOTPhysicsSpace.removeRigidBody]
+    QUEUED_METHODS = [BOTPhysicsSpace.addRigidBody, BOTPhysicsSpace.removeRigidBody, BOTPhysicsSpace.addResolver, BOTPhysicsSpace.removeResolver]
     # I really don't care how this order goes, though this may matter later
     EventQueue.enQueueify(BOTPhysicsSpace, QUEUED_METHODS, lambda eventA, eventB: 0)
 
 __BOTPhysicsSpaceQueue()
 
 class BOTPhysicsRigidBody:
-    def __init__(self, collider, tag):
-        if not isinstance(collider, PhysicsCollider):
+    def __init__(self, boundObj, collider, tag):
+        if not isinstance(collider, BOTPhysicsCollider):
             raise Exception("Collider provided to 'BOTPhysicsRigidBodyObject' must be of type 'BOTPhysicsCollider', got '%s'."%collider.__class__.__name__)
         if not isinstance(tag, str):
             raise Exception("Tag provided to 'BOTPhysicsRigidBodyObject' must be of type 'str', got '%s'."%tag.__class__.__name__)
 
         self.__transform = Transform()
+        self.__boundObj = boundObj
         self.__collider = collider
         self.__tag = tag
         self.__boundObject = None
+        self.__name = "BOTPhysicsRigidBody %i"%id(self)
 
     def getTransform(self):
         return self.__transform
+
+    def getBoundObj(self):
+        return self.__boundObj
 
     def setBoundObject(self, obj):
         self.__boundObject = obj
@@ -75,15 +97,18 @@ class BOTPhysicsRigidBody:
         return self.__tag
 
     def _collidesWith(self, rbo):
-        return self.__collider.collidesWith(rbo.__collider)
+        return self.__collider._collidesWith(rbo.__collider)
 
     def _update(self, deltaTime):
         self.__collider._applyTransform(self.__transform)
 
+    def getName(self):
+        return self.__name
+
 class BOTPhysicsCollider(object):
     def __init__(self, vertices):
         self.__vertices = vertices # note vertices are in local space
-        self._applyTransform(self, Transform())
+        self._applyTransform(Transform())
 
     def _applyTransform(self, transform):
         self.__worldVertices = map(lambda x: transform.getMatrix() * x, self.__vertices)
@@ -109,7 +134,7 @@ class BOTPhysicsCollisionResolverTuple:
         self.__tagA = tagA
         self.__tagB = tagB
 
-    def __hash__(self, other):
+    def __hash__(self):
         if self.__tagA < self.__tagB:
             return hash((self.__tagA, self.__tagB))
         return hash((self.__tagB, self.__tagA))
@@ -118,19 +143,23 @@ class BOTPhysicsCollisionResolverTuple:
         return ((self.__tagA == other.__tagA and self.__tagB == other.__tagB) or
                 (self.__tagA == other.__tagB and self.__tagB == other.__tagA))
     
-class BOTPhysicsCollisionResolver:
+class BOTPhysicsCollisionResolver(object):
     def __init__(self, tagA, tagB):
         self.__tagA = tagA
         self.__tagB = tagB
+        self.__resolverTuple = BOTPhysicsCollisionResolverTuple(self.__tagA, self.__tagB)
 
-    def _resolve(self, objectA, objectB):
-        if self.__tagA == objA.getTag() and self.__tagB == objB.getTag():
-            return self.onResolve(objectA, objectB)
-        elif self.__tagA == objB.getTag() and self.__tagB == objA.getTag():
-            return self.onResolve(objectB, objectA)
+    def _resolve(self, rbA, rbB):
+        if self.__tagA == rbA.getTag() and self.__tagB == rbB.getTag():
+            return self.onResolve(rbA, rbB)
+        elif self.__tagA == rbB.getTag() and self.__tagB == rbA.getTag():
+            return self.onResolve(rbB, rbA)
         else:
             raise Exception("Trying to resolve objs of tags ('%s', '%s') with BOTPhysicsCollisionResolver expecting ('%s', '%s')" %
-                            (objectA.getTag(), objectB.getTag(), self.__tagA, self.__tagB))
+                            (rbA.getTag(), rbB.getTag(), self.__tagA, self.__tagB))
 
-    def onResolve(self, objectA, objectB):
+    def onResolve(self, rbA, rbB):
         raise Exception("BOTPhysicsCollisionResolver %s must define 'onResolve'"%self.__class__.__name__)
+
+    def getResolverTuple(self):
+        return self.__resolverTuple
