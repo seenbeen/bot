@@ -38,7 +38,7 @@ def run():
     pygame.init()
     
     InputManager.initialize()
-    InputManager.instance().setupPriority([0,"foo",2])
+    InputManager.instance().setupPriority([0,1,2])
     
     pygame.event.clear()
     pygame.event.post(pygame.event.Event(FakeEventA))
@@ -49,13 +49,13 @@ def run():
     B = passB()
     C = passAny()
 
-    A.registerManager("foo")
+    A.registerToManager(1)
     A.addListener(B)
     A.addListener(C)
 
     InputManager.instance().update(0)
 
-    assert blockA.set == 1 and blockA.receive == 3, "BlockA event was called an incorrect number of times"
-    assert passB.set == 1 and passB.receive == 2, "passB event was called an incorrect number of times"
-    assert passAny.set == 2, "passAny event was called an incorrect number of times"
+    assert blockA.set == 1 and blockA.receive == 3, "BlockA event was called an incorrect number of times %i / %i"%(blockA.set, blockA.receive)
+    assert passB.set == 1 and passB.receive == 2, "passB event was called an incorrect number of times  %i / %i"%(passB.set, passB.receive)
+    assert passAny.set == 2, "passAny event was called an incorrect number of times %i"%passAny.set
 
