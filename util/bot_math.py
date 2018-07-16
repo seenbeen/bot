@@ -186,9 +186,7 @@ class Transform:
         
     def copy(self):
         temp = Transform()
-        temp.position = self.position.copy()
-        temp.rotation = self.rotation
-        temp.scale = self.scale.copy()
+        self.copyTo(temp)
         return temp
     
     def copyTo(self, xform):
