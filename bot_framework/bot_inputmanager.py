@@ -8,7 +8,6 @@ class InputManager(object):
         self.__nodes = {}
         self.__priority = []
         self.__IDmap = {}
-        self.__IDCount = 0
 
     def sendEvent(self, evt):
         for key in self.__priority:
@@ -16,38 +15,44 @@ class InputManager(object):
                 if obj.sendEvent(evt):
                     return
 
+    '''
+    Listeners can be passed in by reference
+    Parents can be passed in by reference or by ID
+    In both cases, the InputManager will set Listener to be a child of Parent
+    '''
     def _addListener(self, listener, parent):
-        for obj in self.__IDmap:
-            if (obj == listener):
+        for key in self.__IDmap:
+            if (key == listener.getID()):
                 raise Exception("Error, %s object is already in the input tree"%listener.__class__.__name__)
         if (isinstance(listener, InputListener)):
-            temp = InputTreeNode(self.__IDCount, listener)
-            self.__IDmap[self.__IDCount] = temp
-            self.__IDCount += 1
+            temp = InputTreeNode(listener)
+            self.__IDmap[listener.getID()] = temp
             
-            if (isinstance(parent, int)):
-                self.__IDmap[parent].addNode(temp)
+            if (isinstance(parent, int) or isinstance(parent, str)):
+                DictUtil.tryFetch(self.__IDmap, parent.getID(), "Provided object: '%s' has not been added to the input tree"%parent.__class__.__name__).addNode(temp)
                 temp._parentNode = self.__IDmap[parent]
             elif (isinstance(parent, InputListener)):
-                self.__IDmap[parent.ID].addNode(temp)
-                temp._parentNode = self.__IDmap[parent.ID]
+                DictUtil.tryFetch(self.__IDmap, parent.getID(), "Provided object: '%s' has not been added to the input tree"%parent.__class__.__name__).addNode(temp)
+                temp._parentNode = self._getNodeFromListener(parent)
             else:
                 raise Exception("provided object: '%s' is not a correct parent input type and cannot be registered to the input manager"%parent.__class__.__name__)
                 
         else:
             raise Exception("provided object: '%s' is not an input listener and cannot be registered to the input manager"%listener.__class__.__name__)
-    
+        
+    def _addToTopLevel(self, listener, topLevelName):
+        for key in self.__IDmap:
+            if (key == listener.getID()):
+                raise Exception("Error, %s object is already in the input tree"%listener.__class__.__name__)
+        if (isinstance(listener, InputListener)):
+            temp = InputTreeNode(listener)
+            self.__IDmap[listener.getID()] = temp
+            DictUtil.tryFetch(self.__nodes, topLevelName, "Provided name: '%s' is not a top level node name"%topLevelName).append(temp)
+            
     def setupPriority(self, listOfPriorities):
-        for i in listOfPriorities:
-            if not (isinstance(i,int)):
-                raise Exception("Error, Input Priorities MUST be integers")
         self.__nodes = {}
         for prio in listOfPriorities:
-            self.__nodes[prio] = InputTreeNode(self.__IDCount, None)
-            self.__nodes[prio]._parentNode = self
-            self.__IDmap[self.__IDCount] = self.__nodes[prio]
-            self.__IDCount += 1
-            
+            self.__nodes[prio] = []
         self.__priority = listOfPriorities[:]
 
     def update(self, deltaTime):
@@ -56,28 +61,50 @@ class InputManager(object):
 
     def __propogateEvent(self, evt):
         for key in self.__priority:
-            if self.__nodes[key].sendEvent(evt):
-                return
-        
+            for listener in self.__nodes[key]:
+                if listener.sendEvent(evt):
+                    return
+
     def lateUpdate(self):
         pass
+    
+    def _getNodeFromListener(self, listener):
+        return self.__IDmap[listener.getID()]
+    
+    def bringFocus(self, listener):
+        if listener.getID() in self.__IDmap:
+            listenerNode = self._getNodeFromListener(listener)
+            if listenerNode._parentNode != None:
+                listenerNode._parentNode.bringFocus(listenerNode)
+            else:
+                for key in self.__nodes:
+                    if listenerNode in self.__nodes[key]:
+                        temp = self.__nodes[key].pop(self.__nodes[key].index(listenerNode))
+                        self.__nodes[key].insert(0, temp)
+                        return
 
+        else:
+            raise Exception("Error, %s object is not a listener that has been registered"%listener.__class__.__name__)
+                    
 class InputListener(object):
-    def addListener(self, obj):
-        InputManager.instance()._addListener(obj, self.treeNode.ID)
+    def addListener(self, child):
+        InputManager.instance()._addListener(child, self)
 
     def registerToManager(self, priority):
-        InputManager.instance()._addListener(self, priority)
+        InputManager.instance()._addToTopLevel(self, priority)
     
     def bringFocus(self):
-        self.treeNode.bringFocus(self)
+        InputManager.instance().bringFocus(self)
 
     def onEvent(self, evt):
         raise Exception("Error, 'onEvent' is not implemented in '%s'."%(self.__class__.__name__))
+    
+    def getID(self):
+        return id(self)
 
 class InputTreeNode(object):
-    def __init__(self, ID, obj):
-        self.ID = ID
+    def __init__(self, obj):
+        self.ID = self.getID()
         self.__nodes = []
         self._parentNode = None
         self.setObj(obj)
@@ -85,10 +112,6 @@ class InputTreeNode(object):
     def setObj(self, listener):
         if (isinstance(listener, InputListener)):
             self.obj = listener
-            listener.ID = self.ID
-            listener.treeNode = self
-        elif listener is None:
-            self.obj = None
         else:
             raise Exception("Error, %s is not an inputListener being added to the tree"%listener.__class__.__name__)
         
@@ -100,18 +123,19 @@ class InputTreeNode(object):
             raise Exception("Error, %s is not an inputTreeNode being added to the tree"%node.__class__.__name__)
     
     def sendEvent(self, evt):
-        if self.obj != None:
-            if (self.obj.onEvent(evt)):
-                return True
+        if (self.obj.onEvent(evt)):
+            return True
         for node in self.__nodes:
             if (node.sendEvent(evt)):
                 return True
         return False
     
-    def bringFocus(self, listener):
-        if listener in self.__inputTree:
-            temp = self.__inputTree.pop(self.__inputTree.index(listener))
-            self.inputTree.insert(0, temp)
+    def bringFocus(self, node):
+        temp = self.__nodes.pop(self.__nodes.index(node))
+        self.__nodes.insert(0, temp)
+    
+    def getID(self):
+        return id(self)
         
 Singleton.transformToSingleton(InputManager)
         
