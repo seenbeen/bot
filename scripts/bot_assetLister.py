@@ -37,14 +37,15 @@ for root, dirnames, filenames in os.walk("."):
     for filename in filter(filterPyInit, filenames):
         matches.append(os.path.join(root, filename))
 
-searchLine = "AssetManager.instance().loadAsset("
+searchLinePrefix = ".loadAsset(\""
+searchLinePostfix = "\")"
 assetLines = set()
 for match in matches:
     pyfile = open(match, "r")
     for line in pyfile:
-        if searchLine in line:
-            start = line.find("AssetManager.instance().loadAsset(\"") + len("AssetManager.instance().loadAsset(\"")
-            end = line.rfind("\")")
+        if searchLinePrefix in line:
+            start = line.find(searchLinePrefix) + len(searchLinePrefix)
+            end = line.rfind(searchLinePostfix)
             assetLines.add(line[start:end])
     pyfile.close()
 

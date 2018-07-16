@@ -2,6 +2,11 @@ from math import sqrt as math_sqrt
 from math import cos as math_cos
 from math import sin as math_sin
 from math import radians as math_radians
+from math import degrees as math_degrees
+from math import atan2 as math_atan2
+
+def sign(x):
+    return [1, -1][x < 0]
 
 class Vector2:
     # Notes: we really should start doing type checks for everything here,
@@ -176,3 +181,28 @@ class Transform:
         return (Mat33Util.getScaleMatrix(1.0 / self.scale.x, 1.0 / self.scale.y) *
                 Mat33Util.getRotationMatrix(-self.rotation) *
                 Mat33Util.getTranslationMatrix(-self.position.x, -self.position.y))
+
+    '''
+        By no means efficient, and should probably be used sparingly, attempts to decompose
+        a given matrix into its transformation consistuents.
+        Note that since multiple linear combinations exist for any given
+        transformation matrix, this function can't really be used to generate
+        a comparable transform.
+    '''
+    @staticmethod
+    def fromMat33(mat):
+        p1, p2, p3 = map(lambda p: Vector2(*p), [(0, 0), (1, 0), (0, 1)])
+        tp1, tp2, tp3 = map(lambda v: mat * v, [p1, p2, p3])
+
+        t = Transform()
+
+        # extract translation
+        t.position = tp1
+        # extract rotation
+        angleVec = tp2 - tp1
+        t.rotation = math_degrees(math_atan2(angleVec.y, angleVec.x))
+        # extract scale
+        t.scale = Vector2(abs(tp2 - tp1) / abs(p2 - p1),
+                          abs(tp3 - tp1) / abs(p3 - p1))
+        t.scale.y *= sign(Vector2.cross(tp3 - tp1, tp2 - tp1))
+        return t
