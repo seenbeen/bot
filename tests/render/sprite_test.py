@@ -18,9 +18,6 @@ def run():
         a = math.radians(ang)
         return Vector2(r * math.cos(a), r * math.sin(a))
 
-    def genTri(longRad, shortRad):
-        return [Vector2(0, shortRad), Vector2(longRad, 0), Vector2(0, 0)]
-
     class ToruSprite(BOTSprite):
         def __init__(self, initAnimKey="swingOF"):
             animSet = AssetManager.instance().loadAsset("assets/toru.bsprite")
@@ -105,25 +102,16 @@ def run():
 
     # create renderables
     player1 = ToruSprite()
+    player1.debug = True
     player1.transform.scale *= Vector2(-1, 1)
     player2 = ToruSprite("walk1")
+    player2.debug = True
     player2.transform.position += gameCameraP2.transform.position
 
     renderer.registerRenderable(player1) # important! otherwise will not animate
     renderer.registerRenderable(player2)
     gameScene.addRenderable(player1)
     gameScene.addRenderable(player2)
-
-    # to make things easier to track, let's add some camera position trackers
-    cam1Poly = BOTPolygon(genTri(20, 10), (255, 0, 0))
-    cam2Poly = BOTPolygon(genTri(20, 10), (0, 0, 255))
-
-    gameScene.addRenderable(cam1Poly)
-    gameScene.addRenderable(cam2Poly)
-
-    # again, not sure if direct assignment should be advised...
-    cam1Poly.transform = gameCameraP1.transform
-    cam2Poly.transform = gameCameraP2.transform
 
     # ui stuff gets added to ui scene - for now just a bar to divide the 2 screens
     uiDividerPoly = BOTPolygon(map(lambda x: Vector2(*x),[[0, 0],[0, 600],[0, 0]]), (0, 0, 0))
@@ -149,6 +137,9 @@ def run():
         gameCameraP2.transform.position = rotatePt(175, -p2Rotation)
         player2.transform.position = Vector2() + gameCameraP2.transform.position # no copy yet so simulate one...
         player2.transform.scale.x = [1, -1][p2Rotation > 180]
+
+        player1.transform.rotation = -p2Rotation
+
         renderer.update(deltaTime)
 
     renderer.shutdown()

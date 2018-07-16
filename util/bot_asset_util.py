@@ -45,7 +45,7 @@ class AssetUtil:
                 ox, oy = int(newCx - cx), int(newCy - cy) # old surf relative to new surf
                 newSurf.blit(img.subsurface(surfRect), (-ox, -oy))
 
-                localRect = pygame.Rect(surfRect.h - cy, cx, surfRect.w, surfRect.h)
+                localRect = pygame.Rect(-cx, cy - surfRect.h, surfRect.w, surfRect.h)
                 newFrame = BOTSprite.Frame(newSurf, localRect, delay)
                 result[animName].append(newFrame)
         return result
