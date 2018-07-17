@@ -79,6 +79,13 @@ class Vector2:
     
     def __repr__(self):
         return "Vector2(%f, %f)"%(self.x, self.y)
+        
+    def copy(self):
+        return Vector2(self.x, self.y)
+    
+    def copyTo(self, vec):
+        vec.x = self.x
+        vec.y = self.y
 
 # This is an incomplete Mat33 class, good enough to
 # support basic transforms for now
@@ -181,6 +188,16 @@ class Transform:
         return (Mat33Util.getScaleMatrix(1.0 / self.scale.x, 1.0 / self.scale.y) *
                 Mat33Util.getRotationMatrix(-self.rotation) *
                 Mat33Util.getTranslationMatrix(-self.position.x, -self.position.y))
+        
+    def copy(self):
+        temp = Transform()
+        self.copyTo(temp)
+        return temp
+    
+    def copyTo(self, xform):
+        self.position.copyTo(xform.position)
+        xform.rotation = self.rotation
+        self.scale.copyTo(xform.scale)
 
     '''
         By no means efficient, and should probably be used sparingly, attempts to decompose
