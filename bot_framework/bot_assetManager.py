@@ -1,12 +1,11 @@
 import os
-from pygame import image
-from bot_collections import DictUtil
-from pattern.bot_singleton import Singleton
+from util.bot_collections import DictUtil
+from util.pattern.bot_singleton import Singleton
 
 class AssetManager(object):
 
-    def __init__(self):
-        self.assetPath = "../assets/"
+    def __init__(self, assetPath="../assets/"):
+        self.assetPath = assetPath
         self.__ext = {}
         self.__assets = {}
 
@@ -20,19 +19,11 @@ class AssetManager(object):
             asset = callback(path)
             DictUtil.tryStrictInsert(self.__assets, path, asset)
 
-    def loadCallbacks(self):
-        self.loadTypeCallback(".jpg", AssetManager.loadIMG)
-        self.loadTypeCallback(".png", AssetManager.loadIMG)
-
     def loadAsset(self, path):
         return DictUtil.tryFetch(self.__assets, os.path.abspath(self.assetPath + os.path.normpath("./"+path)))
 
     def loadTypeCallback(self, extension, callback):
         DictUtil.tryStrictInsert(self.__ext, extension, callback)
-
-    @staticmethod
-    def loadIMG(path):
-        return image.load(path)
 
 Singleton.transformToSingleton(AssetManager)
 

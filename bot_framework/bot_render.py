@@ -19,7 +19,14 @@ class RectUtil:
             maxX = max(maxX, p.x)
             maxY = max(maxY, p.y)
 
-        return [Vector2(minX, minY), Vector2(maxX - minX, maxY - minY)]
+        return pygame.Rect(map(int, [minX, minY, maxX - minX, maxY - minY]))
+
+    @staticmethod
+    def genRectPts(rect):
+        p = Vector2(rect.x, rect.y)
+        w = Vector2(rect.w, 0)
+        h = Vector2(0, rect.h)
+        return [p, p+w, p+w+h, p+h]
 
 class BOTRenderer:
     def __init__(self, screenWidth, screenHeight):
@@ -172,8 +179,8 @@ class BOTRenderer:
             raise Exception('FATAL: Unregistered Viewport does not match provided Viewport despite sharing name "%s"'%name)
 
     def update(self, deltaTime):
-        for renderable in self.__renderables:
-            renderable._onUpdate(deltaTime)
+        for renderableKey in self.__renderables:
+            self.__renderables[renderableKey]._onUpdate(deltaTime)
 
         self.__screen.fill((255, 255, 255))
         for compositor in self.__compositingChain:
@@ -185,14 +192,14 @@ class BOTRenderer:
         scene = self.getScene(sceneName)
         camera = self.getCamera(cameraName)
         viewport = self.getViewport(viewportName)
-        renderables = scene.query(camera._genBoundingRect())
+        renderables = scene.query(camera)
 
         # finally render to surface
         targetSurface.set_clip(viewport.position.toIntTuple() + viewport.dimensions.toIntTuple())
 
         vcMatrix = viewport.getMatrix() * camera.getMatrix()
         for renderable in renderables:
-            renderable._onRender(vcMatrix * renderable.transform.getMatrix(), targetSurface)
+            renderable._render(vcMatrix * renderable.transform.getMatrix(), targetSurface)
 
         targetSurface.set_clip(None)
 
@@ -237,11 +244,14 @@ class BOTScene(BOTRenderEntity):
     def removeRenderable(self, renderable):
         self.__renderables.remove(renderable)
 
-    # TODO: Perform an optimized query
-    def query(self, boundingRect):
+    def query(self, camera):
+        # TODO: Perform an optimized query
+        #       - Maybe use Separating Axis to test non AABB overlap so we don't have to do this...
         result = []
+        camRect = RectUtil.findAABB(map(lambda v: camera.transform.getMatrix() * v, camera._genBounds()))
         for renderable in self.__renderables:
-            if boundingRect.colliderect(renderable._genBoundingRect()):
+            objRect = RectUtil.findAABB(map(lambda v: renderable.transform.getMatrix() * v, renderable._genBounds()))
+            if camRect.colliderect(objRect):
                 result.append(renderable)
         return result
 
@@ -275,20 +285,14 @@ class BOTCamera(BOTRenderEntity):
         super(BOTCamera, self).__init__(name)
         self.transform = Transform()
         self.dimensions = Vector2(width, height)
+        self.__rectPts = RectUtil.genRectPts(pygame.Rect(-width/2, -height/2, width, height))
 
     '''
         Find the corresponding minimum AABB which covers
         the camera's (possibly rotated) frustum.
     '''
-    def _genBoundingRect(self):
-        # TODO: Probably cache this as it's not the cheapest computation
-        l = Vector2(self.dimensions.x / 2.0, 0.0)
-        h = Vector2(0.0, self.dimensions.y / 2.0)
-        p = self.transform.position
-
-        intRect = map(Vector2.toIntTuple, RectUtil.findAABB([p-l-h, p-l+h, p+l+h, p+l-h]))
-
-        return pygame.Rect(intRect[0] + intRect[1])
+    def _genBounds(self):
+        return self.__rectPts
 
     def getMatrix(self):
         # TODO: Store this so it isn't generated every time
@@ -394,16 +398,34 @@ class BOTRenderable(BOTRenderEntity):
         super(BOTRenderable, self).__init__(name)
         self.transform = Transform()
         self.layer = 0
+        self.debug = False
 
     def destroy(self):
         BOTRenderer.instance().unregisterRenderable(self)
 
-    def _genBoundingRect(self):
-        raise Exception('Error: [BOTRenderable]%s._genBoundingRect not implemented.'%(self.__class__.__name__))
+    def _genBounds(self):
+        raise Exception('Error: [BOTRenderable]%s._genBounds not implemented.'%(self.__class__.__name__))
 
     def _onUpdate(self, deltaTime):
         raise Exception('Error: [BOTRenderable]%s._onUpdate not implemented.'%(self.__class__.__name__))
 
+    '''
+        Wrapper render method called by internals. Allows
+        insertion of debug information
+    '''
+    def _render(self, vcmMatrix, targetSurface):
+        self._onRender(vcmMatrix, targetSurface)
+        if self.debug:
+            rect = RectUtil.findAABB(map(lambda v: vcmMatrix * v, self._genBounds()))
+            pygame.draw.rect(targetSurface, (255, 0, 255), rect, 1)
+            p1, p2, p3 = map(lambda p: (vcmMatrix * Vector2(*p)).toIntTuple(), [(0, 0), (20, 0), (0, 20)])
+
+            # outline
+            pygame.draw.line(targetSurface, (0, 0, 0), p1, p2, 4)
+            pygame.draw.line(targetSurface, (0, 0, 0), p1, p3, 4)
+            # axes
+            pygame.draw.line(targetSurface, (255, 0, 0), p1, p2, 2)
+            pygame.draw.line(targetSurface, (0, 255, 0), p1, p3, 2)
     '''
         Notes:
         - vcmMatrix is the matrix which applies everything needed
@@ -411,7 +433,7 @@ class BOTRenderable(BOTRenderEntity):
           space, taking into account this object's transform.
         - simply use it to determine location when rendering
     '''
-    def _onRender(self, vcmMatrix, surface):
+    def _onRender(self, vcmMatrix, targetSurface):
         raise Exception('Error: [BOTRenderable]%s._onRender not implemented.'%(self.__class__.__name__))
 
     # 'into' the screen is positive
@@ -423,28 +445,97 @@ class BOTPolygon(BOTRenderable):
         super(BOTPolygon, self).__init__(name)
         self.__pts = pts
         self.__color = color
-        self.debug = False # trades some performance to show the computed AABB
 
-    def _genBoundingRect(self):
-        rect = RectUtil.findAABB(map(lambda pt: self.transform.getMatrix() * pt, self.__pts))
-        intRect = map(Vector2.toIntTuple, rect)
-        return pygame.Rect(intRect[0] + intRect[1])
+    def _genBounds(self):
+        return self.__pts
     
     def _onUpdate(self, deltaTime):
         pass
 
-    def _onRender(self, vcmMatrix, surface):
+    def _onRender(self, vcmMatrix, targetSurface):
         newPts = map(lambda pt: (vcmMatrix * pt).toIntTuple(), self.__pts)
-        pygame.draw.polygon(surface, self.__color, newPts)
-        pygame.draw.polygon(surface, (0, 0, 0), newPts, 2) # outline
+        pygame.draw.polygon(targetSurface, self.__color, newPts)
+        pygame.draw.polygon(targetSurface, (0, 0, 0), newPts, 2) # outline
 
-        # debug rect, rather expensive... we'll probably want to improve this
-        if self.debug:
-            p, d = RectUtil.findAABB(map(lambda pt: self.transform.getMatrix() * pt, self.__pts))
-            l = Vector2(d.x, 0.0)
-            h = Vector2(0.0, d.y)
+class BOTSprite(BOTRenderable):
+    class Frame:
+        '''
+            Constructs a sprite frame.
+            surface - Can be a subsurface as well. This will be blit onto the target surface.
+                    Note: Surface must be arranged in such a way that the origin is located at
+                            width(surface)/2, height(surface)/2 due to the way pygame rotates
 
-            intRect = map(lambda v: Vector2.toIntTuple(vcmMatrix * self.transform.getInverseMatrix() * v), [p, p+l, p+l+h, p+h])
+            localRect - The local rectangle boundaries of the sprite frame itself such that
+                (0, 0) of the rect will be the frame's local origin, and the rectangle defines
+                whether the frame is visible or not.
+            frameDelay - How long this frame should stay active before a swap.
+        '''
+        def __init__(self, surface, localRect, frameDelay):
+            self.__surface = surface
+            self.__frameDelay  = frameDelay
+            self.__dims = Vector2(surface.get_width(), surface.get_height())
+            self.__rectPts = RectUtil.genRectPts(localRect)
 
-            pygame.draw.polygon(surface, (255, 0, 255), intRect, 2)
+        '''
+            Returns how much more time must elapse before the frame is switched.
+            If this number is negative, the absolute value is how much remaining time must pass.
+            If this number is positive, the amount is how much time is left of the elapsedTime
+        '''
+        def getRemainingTime(self, elapsedTime):
+            return elapsedTime - self.__frameDelay
 
+        '''
+            This is where things get slightly "hocus pocus". We need to recompute a higher
+            level transformation, since we don't have the power of texture coordinates ;_;'.
+        '''
+        def onRender(self, vcmMatrix, targetSurface):
+            transform = Transform.fromMat33(vcmMatrix)
+            absScale = Vector2(abs(transform.scale.x), abs(transform.scale.y))
+            surf = pygame.transform.scale(self.__surface, (absScale * self.__dims).toIntTuple())
+            surf = pygame.transform.flip(surf, transform.scale.x < 0, transform.scale.y < 0)
+            # Notes: we're essentially working from screen space and in
+            # screen space, rotations are backwards since the y axis is
+            # essentially inverted which is why -rotation OTL
+            surf = pygame.transform.rotate(surf, -transform.rotation)
+            offset = -Vector2(surf.get_width(), surf.get_height())/2.0
+            targetSurface.blit(surf, (transform.position + offset).toIntTuple())
+
+        def genBounds(self):
+            return self.__rectPts
+
+    def __getCurrentFrame(self):
+        return self.__currentAnimation[self.__currentFrameId]
+
+    def __init__(self, initAnimationKey, initAnimationFrames, name=None):
+        super(BOTSprite, self).__init__(name)
+        self.__animations = { initAnimationKey : initAnimationFrames }
+        self.__currentAnimation = initAnimationFrames
+        self.__currentFrameId = 0
+
+        self.__timeCounter = 0
+
+    def setCurrentAnimation(self, animationKey, animationFrame=0):
+        self.__currentAnimation = DictUtil.tryFetch(self.__animations, animationKey,
+                                                    ('Attempting to set non-existent '
+                                                     'animation %s in %s!')
+                                                    % (animationKey, self.getName()))
+        self.__currentFrameId = animationFrame
+
+    def addAnimation(self, animationKey, animationFrames):
+        DictUtil.tryStrictInsert(self.__animations, animationKey, animationFrames,
+                                 ('Attempting to override existing '
+                                  'animation %s in %s!') % (animationKey, self.getName()))
+
+    def _genBounds(self):
+        return self.__getCurrentFrame().genBounds()
+
+    def _onUpdate(self, deltaTime):
+        self.__timeCounter += deltaTime
+        tRemaining = self.__getCurrentFrame().getRemainingTime(self.__timeCounter)
+        while tRemaining >= 0:
+            self.__currentFrameId = (self.__currentFrameId + 1) % len(self.__currentAnimation)
+            self.__timeCounter = tRemaining
+            tRemaining = self.__getCurrentFrame().getRemainingTime(self.__timeCounter)
+
+    def _onRender(self, vcmMatrix, targetSurface):
+        self.__getCurrentFrame().onRender(vcmMatrix, targetSurface)

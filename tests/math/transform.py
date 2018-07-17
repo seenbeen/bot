@@ -9,8 +9,8 @@ def run():
     t.scale = Vector2(2, 2)
     expect = Vector2(15.00, abs(Vector2(10, 10)) + 10)
     result = t.getMatrix() * v
-    assert result == expect, "Transform failed: expect %s, got %s."%(str(expect), str(result))
+    assert result == expect, "Transform failed: expect %s, got %s."%(expect, result)
 
     expect = v
     result = t.getMatrix() * t.getInverseMatrix() * v
-    assert result == expect, "Transform Inverse failed: expect %s, got %s."%(str(expect), str(result))
+    assert result == expect, "Transform Inverse failed: expect %s, got %s."%(expect, result)
