@@ -22,3 +22,4 @@ def run():
     assert isinstance(assetManager.loadAsset("/////test.jpg"), Surface), "test.jpg failed to load" #This is actually a duplicate load check
     assert isinstance(assetManager.loadAsset("/../assetmanager/test.jpg"), Surface), "test.jpg failed to load" #checks for dumb syntax
 
+    AssetManager.shutdown()

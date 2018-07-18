@@ -143,3 +143,4 @@ def run():
         renderer.update(deltaTime)
 
     renderer.shutdown()
+    AssetManager.shutdown()
