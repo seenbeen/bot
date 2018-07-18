@@ -106,6 +106,7 @@ def run():
     player1.transform.scale *= Vector2(-1, 1)
     player2 = ToruSprite("walk1")
     player2.debug = True
+    player2.layer = 1
     player2.transform.position += gameCameraP2.transform.position
 
     renderer.registerRenderable(player1) # important! otherwise will not animate

@@ -175,7 +175,7 @@ class BOTRenderer:
 
         vcMatrix = viewport.getMatrix() * camera.getMatrix()
         for renderable in renderables:
-            renderable._render(vcMatrix * renderable.transform.getMatrix(), targetSurface)
+            renderable._render(vcMatrix, targetSurface)
 
         targetSurface.set_clip(None)
 
@@ -229,6 +229,7 @@ class BOTScene(BOTRenderEntity):
             objRect = RectUtil.findAABB(map(lambda v: renderable.transform.getMatrix() * v, renderable._genBounds()))
             if camRect.colliderect(objRect):
                 result.append(renderable)
+        result.sort()
         return result
 
     # TODO: update the scene manager so that querying returns accurate results if
@@ -389,32 +390,45 @@ class BOTRenderable(BOTRenderEntity):
         Wrapper render method called by internals. Allows
         insertion of debug information
     '''
-    def _render(self, vcmMatrix, targetSurface):
-        self._onRender(vcmMatrix, targetSurface)
+    def _render(self, vcMatrix, targetSurface):
+        self._onRender(vcMatrix, targetSurface)
         if self.debug:
-            rect = RectUtil.findAABB(map(lambda v: vcmMatrix * v, self._genBounds()))
-            pygame.draw.rect(targetSurface, (255, 0, 255), rect, 1)
+            mMatrix = self.transform.getMatrix()
+            vcmMatrix = vcMatrix * mMatrix
+
+            # AABB in world space
+            rect = RectUtil.findAABB(map(lambda v: mMatrix * v, self._genBounds()))
+            pts = map(lambda v: (vcMatrix * v).toIntTuple(), RectUtil.genRectPts(rect))
+            pygame.draw.polygon(targetSurface, (255, 0, 255), pts, 2)
+
+            # Bounding Polygon in world space
+            pts = map(lambda v: (vcmMatrix * v).toIntTuple(), self._genBounds())
+            pygame.draw.polygon(targetSurface, (0, 255, 255), pts, 1)
+
+            # Local Axes
             p1, p2, p3 = map(lambda p: (vcmMatrix * Vector2(*p)).toIntTuple(), [(0, 0), (20, 0), (0, 20)])
 
             # outline
             pygame.draw.line(targetSurface, (0, 0, 0), p1, p2, 4)
             pygame.draw.line(targetSurface, (0, 0, 0), p1, p3, 4)
+
             # axes
             pygame.draw.line(targetSurface, (255, 0, 0), p1, p2, 2)
             pygame.draw.line(targetSurface, (0, 255, 0), p1, p3, 2)
+
     '''
         Notes:
-        - vcmMatrix is the matrix which applies everything needed
-          to a coordinate in local space to get it into the proper screen
-          space, taking into account this object's transform.
-        - simply use it to determine location when rendering
+        - vcMatrix is the matrix which applies everything needed
+          to a coordinate in world space to get it into screen space
+        - remember to bring coordinates into world space using model
+          matrix prior to multiplying with the vcMatrix
     '''
-    def _onRender(self, vcmMatrix, targetSurface):
+    def _onRender(self, vcMatrix, targetSurface):
         raise Exception('Error: [BOTRenderable]%s._onRender not implemented.'%(self.__class__.__name__))
 
     # 'into' the screen is positive
     def __cmp__(self, renderable):
-        return self.layer > renderable.layer
+        return renderable.layer - self.layer
 
 class BOTPolygon(BOTRenderable):
     def __init__(self, pts, color, name=None):
@@ -428,8 +442,8 @@ class BOTPolygon(BOTRenderable):
     def _onUpdate(self, deltaTime):
         pass
 
-    def _onRender(self, vcmMatrix, targetSurface):
-        newPts = map(lambda pt: (vcmMatrix * pt).toIntTuple(), self.__pts)
+    def _onRender(self, vcMatrix, targetSurface):
+        newPts = map(lambda pt: (vcMatrix * self.transform.getMatrix() * pt).toIntTuple(), self.__pts)
         pygame.draw.polygon(targetSurface, self.__color, newPts)
         pygame.draw.polygon(targetSurface, (0, 0, 0), newPts, 2) # outline
 
@@ -513,5 +527,5 @@ class BOTSprite(BOTRenderable):
             self.__timeCounter = tRemaining
             tRemaining = self.__getCurrentFrame().getRemainingTime(self.__timeCounter)
 
-    def _onRender(self, vcmMatrix, targetSurface):
-        self.__getCurrentFrame().onRender(vcmMatrix, targetSurface)
+    def _onRender(self, vcMatrix, targetSurface):
+        self.__getCurrentFrame().onRender(vcMatrix * self.transform.getMatrix(), targetSurface)
