@@ -4,12 +4,52 @@ from util.pattern.bot_singleton import Singleton
 from util.bot_collections import DictUtil
 
 class InputManager(object):
+    '''
+    This class is a node in the input manager's event tree
+    Each node has an associated listener and will call it's onEvent before propogating to it's children
+    '''
+    class __InputTreeNode(object):
+        def __init__(self, listener):
+            self.__nodes = []
+            self._parentNode = None
+            self.listener = listener
+        
+        '''
+        Adds another node as child of this node
+        '''
+        def _addNode(self, node):
+            if isinstance(node, self.__class__):
+                self.__nodes.append(node)
+                node._parentNode = self
+            else:
+                raise Exception("Error, %s is not an inputTreeNode"%node.__class__.__name__)
+        '''
+        Calls own onEvent, then propogates event to children if not blocked
+        '''
+        def _sendEvent(self, evt):
+            if self.listener.onEvent(evt):
+                return True
+            for node in self.__nodes:
+                if node._sendEvent(evt):
+                    return True
+            return False
+        
+        def _bringFocus(self, node):
+            temp = self.__nodes.pop(self.__nodes.index(node))
+            self.__nodes.insert(0, temp)
+        
+        def getName(self):
+            return str(id(self))+self.__class__.__name__
+
+    '''
+    InputManager
+    '''
     def __init__(self):
         self.__nodes = {}
         self.__priority = []
         self.__IDmap = {}
 
-    '''
+        '''
     Listeners can be passed in by reference
     Parents can be passed in by reference or by ID
     In both cases, the InputManager will set Listener to be a child of Parent
@@ -17,14 +57,14 @@ class InputManager(object):
     def _addListener(self, listener, parent):
         if listener.getName() in self.__IDmap:
             raise Exception("Error, %s object is already in the input tree"%listener.__class__.__name__)
-        if (isinstance(listener, InputListener)):
-            temp = InputTreeNode(listener)
+        if isinstance(listener, InputListener):
+            temp = InputManager.__InputTreeNode(listener)
             self.__IDmap[listener.getName()] = temp
             
             if isinstance(parent, str):
                 DictUtil.tryFetch(self.__IDmap, parent.getName(), "Provided object: '%s' has not been added to the input tree"%parent.__class__.__name__)._addNode(temp)
                 temp._parentNode = self.__IDmap[parent]
-            elif (isinstance(parent, InputListener)):
+            elif isinstance(parent, InputListener):
                 DictUtil.tryFetch(self.__IDmap, parent.getName(), "Provided object: '%s' has not been added to the input tree"%parent.__class__.__name__)._addNode(temp)
                 temp._parentNode = self._getNodeFromListener(parent)
             else:
@@ -39,11 +79,10 @@ class InputManager(object):
     priorityKey is a key name that was defined in setupPriority
     '''
     def _addToTopLevel(self, listener, priorityKey):
-        for key in self.__IDmap:
-            if (key == listener.getName()):
-                raise Exception("Error, %s object is already in the input tree"%listener.__class__.__name__)
-        if (isinstance(listener, InputListener)):
-            temp = InputTreeNode(listener)
+        if listener.getName() in self.__IDmap:
+            raise Exception("Error, %s object is already in the input tree"%listener.__class__.__name__)
+        if isinstance(listener, InputListener):
+            temp = InputManager.__InputTreeNode(listener)
             self.__IDmap[listener.getName()] = temp
             DictUtil.tryFetch(self.__nodes, priorityKey, "Provided name: '%s' is not an existing top level key"%priorityKey).append(temp)
             
@@ -99,7 +138,6 @@ class InputManager(object):
                         temp = self.__nodes[key].pop(self.__nodes[key].index(listenerNode))
                         self.__nodes[key].insert(0, temp)
                         return
-
         else:
             raise Exception("Error, %s object is not a listener that has been registered"%listener.__class__.__name__)
                     
@@ -124,43 +162,11 @@ class InputListener(object):
         InputManager.instance()._bringFocus(self)
 
     def onEvent(self, evt):
-        raise Exception("Error, 'onEvent' is not implemented in '%s'."%(self.__class__.__name__))
+        raise Exception("Error, 'onEvent' is not implemented in %s-%i"%(self.__class__.__name__, id(self)))
     
     def getName(self):
         return str(id(self))+self.__class__.__name__
 
-class InputTreeNode(object):
-    def __init__(self, listener):
-        self.__nodes = []
-        self._parentNode = None
-        self.listener = listener
-    
-    '''
-    Adds another node as child of this node
-    '''
-    def _addNode(self, node):
-        if (isinstance(node,InputTreeNode)):
-            self.__nodes.append(node)
-            node._parentNode = self
-        else:
-            raise Exception("Error, %s is not an inputTreeNode"%node.__class__.__name__)
-    '''
-    Calls own onEvent, then propogates event to children if not blocked
-    '''
-    def _sendEvent(self, evt):
-        if (self.listener.onEvent(evt)):
-            return True
-        for node in self.__nodes:
-            if (node._sendEvent(evt)):
-                return True
-        return False
-    
-    def _bringFocus(self, node):
-        temp = self.__nodes.pop(self.__nodes.index(node))
-        self.__nodes.insert(0, temp)
-    
-    def getName(self):
-        return str(id(self))+self.__class__.__name__
         
 Singleton.transformToSingleton(InputManager)
 
