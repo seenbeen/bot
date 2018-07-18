@@ -1,4 +1,3 @@
-from pygame import Rect as pygame_Rect
 from util.bot_collections import DictUtil
 from util.bot_math import *
 from util.pattern.bot_singleton import Singleton
@@ -115,7 +114,7 @@ class BOTPhysicsCollider(object):
 
         # temporarily just compute the bounding rectangle here, and call it a day
         # we can use Separating Axis Test later if we really need to
-        self.__AABB = pygame_Rect(reduce(lambda x, y: x + y, map(Vector2.toIntTuple, RectUtil.findAABB(self.__worldVertices)), []))
+        self.__AABB = RectUtil.findAABB(self.__worldVertices)
         
     def _collidesWith(self, collider):
         return self.__AABB.colliderect(collider.__AABB)

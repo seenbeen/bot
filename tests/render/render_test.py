@@ -110,4 +110,5 @@ def run():
         renderer.update(0)
 
         myClock.tick(60) # 60 fps :)
+
     renderer.shutdown()

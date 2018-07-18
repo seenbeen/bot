@@ -79,4 +79,6 @@ def run():
     assert passB.set == 1 and passB.receive == 2, "passB event was called an incorrect number of times  %i / %i"%(passB.set, passB.receive)
     assert passAny.set == 2, "passAny event was called an incorrect number of times %i"%passAny.set
     assert blockAA.set == 1 and blockAA.receive == 3, "BlockAA event was called an incorrect number of times %i / %i"%(blockA.set, blockA.receive)
-    
+
+    InputManager.shutdown()
+

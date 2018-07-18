@@ -77,4 +77,5 @@ def run():
     
     physx.update(0) # no more collision cuz fireball went peace
     physx.lateUpdate()
-    
+
+    BOTPhysicsSpace.shutdown()
