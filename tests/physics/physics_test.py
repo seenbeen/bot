@@ -72,10 +72,16 @@ def run():
 
     # simulate our game loop thing
 
+    # quick pointCast to see if we can pin both fireball and mydude
+    pointCastPoint = Vector2(0,0)
+    ptCastResult = physx.pointCast(pointCastPoint)
+    print "Hit [%s] with pointCast %s" % (", ".join(map(lambda x: str(x.getBoundObj().__class__.__name__),
+                                                        ptCastResult)),
+                                          pointCastPoint)
+    
     physx.update(0)
     physx.lateUpdate() # recall this flushes add/remove ops
     
     physx.update(0) # no more collision cuz fireball went peace
     physx.lateUpdate()
-
-    BOTPhysicsSpace.shutdown()
+    
