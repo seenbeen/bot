@@ -39,6 +39,19 @@ class BOTPhysicsSpace:
             raise Exception("FATAL: Unregistered 'BOTPhysicsResolver' does not match provided "
                             "'BOTPhysicsResolver' despite sharing ResolverTuple '%s'" % resolverTuple)
 
+    '''
+        Takes a point in world space, and returns
+        all RBO's whose collider overlaps the given pt.
+    '''
+    def pointCast(self, pt):
+        result = []
+        # optimizable, should cache the rbo keys, or iterate using a linked list
+        for rboKey in self.__rigidBodies:
+            rbo = self.__rigidBodies[rboKey]
+            if rbo._collidesWithPointCast(pt):
+                result.append(rbo)
+        return result
+
     def update(self, deltaTime):
         for rboKey in self.__rigidBodies:
             self.__rigidBodies[rboKey]._update(deltaTime)
@@ -49,7 +62,7 @@ class BOTPhysicsSpace:
             rbA = self.__rigidBodies[keys[i]]
             for j in range(i+1, n):
                 rbB = self.__rigidBodies[keys[j]]
-                if rbA._collidesWith(rbB):
+                if rbA._collidesWithCollider(rbB):
                     resolverTuple = BOTPhysicsCollisionResolverTuple(rbA.getTag(), rbB.getTag())
                     if resolverTuple in self.__resolvers:
                         self.__resolvers[resolverTuple]._resolve(rbA, rbB)
@@ -95,8 +108,11 @@ class BOTPhysicsRigidBody:
     def getTag(self):
         return self.__tag
 
-    def _collidesWith(self, rbo):
+    def _collidesWithCollider(self, rbo):
         return self.__collider._collidesWith(rbo.__collider)
+
+    def _collidesWithPointCast(self, pt):
+        return self.__collider._collidesWithPointCast(pt)
 
     def _update(self, deltaTime):
         self.__collider._applyTransform(self.__transform)
@@ -118,6 +134,9 @@ class BOTPhysicsCollider(object):
         
     def _collidesWith(self, collider):
         return self.__AABB.colliderect(collider.__AABB)
+
+    def _collidesWithPointCast(self, pt):
+        return self.__AABB.collidepoint(pt.toIntTuple())
 
 class BOTBoxCollider(BOTPhysicsCollider):
     def __init__(self, dimensions):
