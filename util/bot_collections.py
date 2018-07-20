@@ -146,18 +146,22 @@ class LLDict:
         self.__dict = {}
         self.__linkedList = LList()
 
-    def insert(self, key, item):
+    def insert(self, key, item, failMessage=None):
         self.__linkedList.pushEnd(item)
         it = self.__linkedList.end().prev()
         try:
-            DictUtil.tryStrictInsert(self.__dict, key, it, "Trying to add existing key '%s' to LLDict" % key)
+            if failMessage == None:
+                failMessage = "Trying to add existing key '%s' to LLDict" % key
+            DictUtil.tryStrictInsert(self.__dict, key, it, failMessage)
         except Exception as e:
             # rollback and re-raise
             it.delete()
             raise e
 
-    def remove(self, key):
-        it = DictUtil.tryFetch(self.__dict, key, "Trying to remove non-existent key '%s' from LLDict" % key)
+    def remove(self, key, failMessage=None):
+        if failMessage == None:
+            failMessage = "Trying to remove non-existent key '%s' from LLDict" % key
+        it = DictUtil.tryFetch(self.__dict, key, failMessage)
         val = it.getValue()
 
         del self.__dict[key] # guaranteed to exist at this point
@@ -165,8 +169,10 @@ class LLDict:
 
         return val
 
-    def get(self, key):
-        it = DictUtil.tryFetch(self.__dict, key, "Trying to fetch non-existent key '%s' from LLDict" % key)
+    def get(self, key, failMessage=None):
+        if failMessage == None:
+            failMessage = "Trying to fetch non-existent key '%s' from LLDict" % key
+        it = DictUtil.tryFetch(self.__dict, key, failMessage)
         return it.getValue()
 
     def begin(self):
