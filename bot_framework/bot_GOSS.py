@@ -1,27 +1,27 @@
 import time
-from util.bot_collections import DictUtil
+from util.bot_collections import DictUtil, EntityUtil, LLDict
 from util.pattern.bot_eventqueue import EventQueue
 from util.pattern.bot_singleton import Singleton
 
 class GameAppImpl:
     def initialize(self):
         raise Exception('Error, %s must define initializeSubsystems'%self.__class__.__name__)
-    
+
     def shutdown(self):
         raise Exception('Error, %s must define shutdownSubsystems'%self.__class__.__name__)
-    
+
     def update(self, deltaTime):
         raise Exception('Error, %s must define gameLoop'%self.__class__.__name__)
-    
+
     def lateUpdate(self, deltaTime):
         raise Exception('Error, %s must define gameLoop'%self.__class__.__name__)
 
 class GameApplication:
     def __init__(self, implementation):
-        self.__gameObjects = {}
+        self.__gameObjects = LLDict()
         self.__running = True
         self.__impl = implementation()
-        
+
     def run(self):
         self.__impl.initialize()
         start = time.time()
@@ -30,131 +30,169 @@ class GameApplication:
             currentTime = time.time()
             deltaTime = currentTime - start
             start = currentTime
-            
+
             self.__impl.update(deltaTime)
-            
-            for gObj in self.__gameObjects:
-                self.__gameObjects[gObj].update(deltaTime)
-                
+
+            it = self.__gameObjects.begin()
+            while it != self.__gameObjects.end():
+                it.getValue().update(deltaTime)
+                it = it.next()
+
             self.__impl.lateUpdate()
-            
-            for gObj in self.__gameObjects:
-                self.__gameObjects[gObj].lateUpdate()
-            
+
+            it = self.__gameObjects.begin()
+            while it != self.__gameObjects.end():
+                it.getValue().lateUpdate()
+                it = it.next()
+
             self.pump()
+
+        # Sanity check for remaining objects
+        objs = []
+        it = self.__gameObjects.begin()
+        while it != self.__gameObjects.end():
+            objs.append(it.getValue().getName())
+            it = it.next()
+        if objs:
+            raise Exception("Fatal: GameApplication still has remaining objects at time of exit\n%s" % "\n".join(objs))
+
         self.__impl.shutdown()
-        
+
     def addObject(self, obj):
-        DictUtil.tryStrictInsert(self.__gameObjects, obj.getName(), obj, "GameObject: %s already exists inside of GameApplication"%obj.getName())
-    
-    def removeObject(self, name):
-        DictUtil.tryRemove(self.__gameObjects, name, "GameObject: %s is trying to be removed from GameApplication but does not exist"%name)
-    
+        self.__gameObjects.insert(obj.getName(), obj, "GameObject %s already exists in GameApplication" % obj.getName())
+        obj._onEnter()
+
+    def removeObject(self, obj):
+        name = obj.getName()
+        obj = self.__gameObjects.get(name, "Attempting to remove non-existent GameObject %s from GameApplication" % name)
+        obj._onExit()
+        self.__gameObjects.remove(name)
+
     def getGameObject(self, name):
-        return DictUtil.tryFetch(self.__gameObjects, name, "Gameobject: %s being fetched does not exist"%name)
-    
-    def quit(self):
+        return self.__gameObjects.get(name, "Gameobject: %s being fetched does not exist" % name)
+
+    def quitApp(self):
         self.__running = False
-        
+
 class GameObject(object):
-    def __init__(self, listofComponents, name):
-        self.__name = name
-        self.__components = {}
-        for comp in listofComponents:
-            self.addComponent(comp)
+    def __init__(self, initComponents, name=None):
+        self.__name = [name, EntityUtil.genName(name)][name == None]
+        self.__components = LLDict()
+        self.__inApp = False # is this object already in the game stage?
+
+        for component in initComponents:
+            self.addComponent(component)
         self.pump()
-        
+
+    def _onEnter(self):
+        self.__inApp = True
+        it = self.__components.begin()
+        while it != self.__components.end():
+            it.getValue().onEnter()
+            it = it.next()
+
+    def _onExit(self):
+        self.__inApp = False
+        it = self.__components.begin()
+        while it != self.__components.end():
+            it.getValue().onExit()
+            it = it.next()
+
     def addComponent(self, comp):
-        DictUtil.tryStrictInsert(self.__components, comp.getName(), comp, "Component: %s already exists inside of GameObject"%comp.getName())
-        if (isinstance(comp, ScriptComponent)):
-            comp._setParent(self)
-        
-    def removeComponent(self, name):
-        DictUtil.tryRemove(self.__components, name, "Component: %s is trying to be removed from %s but does not exist"%name,__class__.name)
-    
+        self.__components.insert(comp.getName(), comp, "Component %s already exists inside of GameObject" % comp.getName())
+        comp._bindToParent(self)
+        if self.__inApp:
+            comp.onEnter()
+
+    def removeComponent(self, comp):
+        name = comp.getName()
+        comp = self.__components.get(name, "Component %s is trying to be removed from %s but does not exist" %
+                                     (name, self.__class__.__name__))
+        if self.__inApp:
+            comp.onExit()
+        comp._unbindFromParent(self)
+        self.__components.remove(name)
+
     def getComponent(self, name):
-        return DictUtil.tryFetch(self.__components, name, "Component: %s being fetched does not exist"%name) 
-    
+        return self.__components.get(name, "Component %s being fetched does not exist" % name)
+
     def update(self, dt):
-        for comp in self.__components:
-            self.__components[comp].update(dt)
-            
+        it = self.__components.begin()
+        while it != self.__components.end():
+            it.getValue().onUpdate(dt)
+            it = it.next()
+
     def lateUpdate(self):
-        for comp in self.__components:
-            self.__components[comp].lateUpdate()
+        it = self.__components.begin()
+        while it != self.__components.end():
+            it.getValue().onLateUpdate()
+            it = it.next()
         self.pump()
-            
+
     def destroy(self):
-        GameApplication.instance().removeObject(self.name)
-        
+        GameApplication.instance().removeObject(self)
+
     def getName(self):
         return self.__name
-          
+
 class Component(object):
-    def __init__(self, name):
-        self.__name = name
+    def __init__(self, name=None):
+        self.__name = [name, EntityUtil.genName(name)][name == None]
+        self.__parentGameObject = None
 
-    def update(self, deltaTime):
-        raise Exception('Error, %s must define a update method'%self.__class__.__name__)
-
-    def lateUpdate(self):
-        raise Exception('Error, %s must define a late update method'%self.__class__.__name__)
-    
-    def getName(self):
-        return self.__name
-
-class ScriptComponent(object):
-    def __init__(self, name):
-        self.__name = name
-        self.__gameObject = None
-        
-    def _setParent(self, gameObjectParent):
-        self.__gameObject = gameObjectParent
+    def _bindToParent(self, parentGameObject):
+        if self.__parentGameObject != None:
+            raise Exception("Fatal, trying to bind %s to %s when already bound to %s" %
+                            (self.getName(), parentGameObject.getName(), self.__parentGameObject.getName()))
+        self.__parentGameObject = parentGameObject
         self.onBind()
-        
-    def onBind(self):
-        pass
 
-    def update(self, deltaTime):
-        raise Exception('Error, %s must define a update method'%self.__class__.__name__)
+    def _unbindFromParent(self, parentGameObject):
+        if self.__parentGameObject == None:
+            raise Exception("Fatal, trying to unbind %s from non-existent parent %s" %
+                            (self.getName(), parentGameObject.getName()))
+        if self.__parentGameObject != parentGameObject:
+            raise Exception("Fatal, trying to unbind %s from supposed parent %s, actual parent %s" %
+                            (self.getName(), parentGameObject.getName(), self.__parentGameObject.getName()))
+        self.onUnbind()
+        self.__parentGameObject = None
 
-    def lateUpdate(self):
-        raise Exception('Error, %s must define a late update method'%self.__class__.__name__)
-    
     def getName(self):
         return self.__name
-    
-    def getGameObject(self):
-        return self.__gameObject
 
+    def onUpdate(self, deltaTime):
+        raise Exception("Error, %s must define 'onUpdate'" % self.__class__.__name__)
+
+    def onLateUpdate(self):
+        raise Exception("Error, %s must define 'onLateUpdate'" % self.__class__.__name__)
+
+    def onEnter(self):
+        raise Exception("Error, %s must define 'onEnter'" % self.__class__.__name__)
+
+    def onExit(self):
+        raise Exception("Error, %s must define 'onExit'" % self.__class__.__name__)
+
+    def onBind(self):
+        raise Exception("Error, %s must define 'onBind'" % self.__class__.__name__)
+
+    def onUnbind(self):
+        raise Exception("Error, %s must define 'onUnbind'" % self.__class__.__name__)
+
+class ScriptComponent(Component):
+    def __init__(self, name=None):
+        super(ScriptComponent, self).__init__(name)
+
+    def getParent(self):
+        return self._Component__parentGameObject # this is kind of cheating to access parent private vars
+
+# we actually want add/removes weighted the same so that resolution is in the order of calling
 def __GameObjectQueue():
     QUEUED_METHODS = [GameObject.addComponent, GameObject.removeComponent]
-
-    ADD_METH = GameObject.addComponent.__name__
-    REMOVE_METH = GameObject.removeComponent.__name__
-
-    KIND_ORDER = {}
-    METHOD_ORDER = {ADD_METH : 0, REMOVE_METH: 1}
-    
-    def pumpCompare(eventA, eventB):
-        return METHOD_ORDER[eventA.name] - METHOD_ORDER[eventB.name]
-
-    EventQueue.enQueueify(GameObject, QUEUED_METHODS, pumpCompare)
+    EventQueue.enQueueify(GameObject, QUEUED_METHODS, lambda eventA, eventB : 0)
 
 def __GameAppQueue():
     QUEUED_METHODS = [GameApplication.addObject, GameApplication.removeObject]
-
-    ADDGAMEOBJ_METH = GameApplication.addObject.__name__
-    REMOVEGAMEOBJ_METH = GameApplication.removeObject.__name__
-
-    KIND_ORDER = {}
-    METHOD_ORDER = {ADDGAMEOBJ_METH : 0, REMOVEGAMEOBJ_METH: 1}
-    
-    def pumpCompare(eventA, eventB):
-        return (METHOD_ORDER[eventA.name] - METHOD_ORDER[eventB.name])
-
-
-    EventQueue.enQueueify(GameApplication, QUEUED_METHODS, pumpCompare)
+    EventQueue.enQueueify(GameApplication, QUEUED_METHODS, lambda eventA, eventB : 0)
     
 __GameAppQueue()    
 __GameObjectQueue()
