@@ -32,7 +32,7 @@ class TestGameApp(GameAppImpl):
     def lateUpdate(self):
         pass
 
-class DeltaTimePrinter(ScriptComponent):
+class DeltaTimePrinter(GameObjectComponent):
     def __init__(self, name):
         self.counter = 0.0
         super(DeltaTimePrinter, self).__init__(name)
