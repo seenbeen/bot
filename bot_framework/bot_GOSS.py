@@ -135,7 +135,7 @@ class GameObject(object):
     def getName(self):
         return self.__name
 
-class Component(object):
+class GameObjectComponent(object):
     def __init__(self, name=None):
         self.__name = [name, EntityUtil.genName(name)][name == None]
         self.__parentGameObject = None
@@ -157,6 +157,9 @@ class Component(object):
         self.onUnbind()
         self.__parentGameObject = None
 
+    def getParent(self):
+        return self.__parentGameObject
+
     def getName(self):
         return self.__name
 
@@ -177,13 +180,6 @@ class Component(object):
 
     def onUnbind(self):
         raise Exception("Error, %s must define 'onUnbind'" % self.__class__.__name__)
-
-class ScriptComponent(Component):
-    def __init__(self, name=None):
-        super(ScriptComponent, self).__init__(name)
-
-    def getParent(self):
-        return self._Component__parentGameObject # this is kind of cheating to access parent private vars
 
 # we actually want add/removes weighted the same so that resolution is in the order of calling
 def __GameObjectQueue():
