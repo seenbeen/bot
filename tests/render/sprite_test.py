@@ -41,7 +41,7 @@ def run():
     assetManager.loadTypeCallback(".bsprite", AssetUtil.loadSpriteSheet)
 
     print "Loading Assets..."
-    AssetManager.instance().load(listFile)
+    assetManager.load(listFile)
     
     # init renderer
     BOTRenderer.initialize(800, 600)
@@ -143,5 +143,5 @@ def run():
 
         renderer.update(deltaTime)
 
-    renderer.shutdown()
+    BOTRenderer.shutdown()
     AssetManager.shutdown()

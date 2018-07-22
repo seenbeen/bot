@@ -15,7 +15,7 @@ def usage():
     sys.exit(-1)
 
 argc = len(sys.argv)
-if argc <= 1:
+if argc <= 2:
     usage()
  
 f = open(sys.argv[1]+".botal", "w+")

@@ -1,8 +1,8 @@
 import pygame
 
+from util.bot_collections import *
 from util.bot_math import *
 from util.pattern.bot_singleton import Singleton
-from util.bot_collections import DictUtil
 
 class BOTRenderer:
     def __init__(self, screenWidth, screenHeight):
@@ -11,8 +11,8 @@ class BOTRenderer:
         self.__screen = pygame.display.set_mode((screenWidth, screenHeight))
 
         # configuration-related
-        self.__compositingChain = [] # TODO: Use LL for iteration
-        self.__renderables = {}
+        self.__compositingChain = []
+        self.__renderables = LLDict()
         self.__scenes = {}
         self.__cameras = {}
         self.__viewports = {}
@@ -20,7 +20,7 @@ class BOTRenderer:
 
     ''' Shutdown of the renderer, called by Singleton shutdown. '''
     def __del__(self):
-        pass
+        pygame.display.quit()
 
     # Component Accessors
     ''' Returns a tuple containing the screen dimensions. '''
@@ -32,9 +32,10 @@ class BOTRenderer:
         Raises an exception if no such renderable exists.
     '''
     def getRenderable(self, renderableName):
-        return DictUtil.tryFetch(self.__renderables, renderableName,
-                                  ('Attempting to fetch non-existent '
-                                   'renderable %s from renderer!')%renderableName)
+        return self.__renderables.get(renderableName,
+                                      ('Attempting to fetch non-existent '
+                                       'renderable %s from renderer!') %
+                                      renderableName)
 
     '''
         Returns the scene matching the given name.
@@ -42,8 +43,9 @@ class BOTRenderer:
     '''
     def getScene(self, sceneName):
         return DictUtil.tryFetch(self.__scenes, sceneName,
-                                  ('Attempting to fetch non-existent '
-                                   'scene %s from renderer!')%sceneName)
+                                 ('Attempting to fetch non-existent '
+                                  'scene %s from renderer!') %
+                                 sceneName)
 
     '''
         Returns the camera matching the given name.
@@ -51,8 +53,9 @@ class BOTRenderer:
     '''
     def getCamera(self, cameraName):
         return DictUtil.tryFetch(self.__cameras, cameraName,
-                                  ('Attempting to fetch non-existent '
-                                   'camera %s from renderer!')%cameraName)
+                                 ('Attempting to fetch non-existent '
+                                  'camera %s from renderer!') %
+                                 cameraName)
 
     '''
         Returns the viewport matching the given name.
@@ -60,8 +63,9 @@ class BOTRenderer:
     '''
     def getViewport(self, viewportName):
         return DictUtil.tryFetch(self.__viewports, viewportName,
-                                  ('Attempting to fetch non-existent '
-                                   'viewport %s from renderer!')%viewportName)
+                                 ('Attempting to fetch non-existent '
+                                  'viewport %s from renderer!') %
+                                 viewportName)
 
     # Configuration Registration Methods
     ''' Chains a compositor onto the current compositing chain. '''
@@ -72,30 +76,34 @@ class BOTRenderer:
     ''' Adds a Renderable to the current state of the renderer. '''
     def registerRenderable(self, renderable):
         name = renderable.getName()
-        DictUtil.tryStrictInsert(self.__renderables, name, renderable,
+        self.__renderables.insert(name, renderable,
                                   ('Attempting to override existing '
-                                   'renderable %s in renderer!')%name)
+                                   'renderable %s in renderer!') %
+                                  name)
 
     ''' Adds a Scene to the current state of the renderer. '''
     def registerScene(self, scene):
         name = scene.getName()
         DictUtil.tryStrictInsert(self.__scenes, name, scene,
-                                  ('Attempting to override existing '
-                                   'scene %s in renderer!')%name)
+                                 ('Attempting to override existing '
+                                  'scene %s in renderer!') %
+                                 name)
 
     ''' Adds a Viewport to the current state of the renderer. '''
     def registerViewport(self, viewport):
         name = viewport.getName()
         DictUtil.tryStrictInsert(self.__viewports, name, viewport,
-                                  ('Attempting to override existing '
-                                   'viewport %s in renderer!')%name)
+                                 ('Attempting to override existing '
+                                  'viewport %s in renderer!') %
+                                 name)
 
     ''' Adds a Camera to the current state of the renderer. '''
     def registerCamera(self, camera):
         name = camera.getName()
         DictUtil.tryStrictInsert(self.__cameras, name, camera,
-                                  ('Attempting to override existing '
-                                   'camera %s in renderer!')%name)
+                                 ('Attempting to override existing '
+                                  'camera %s in renderer!') %
+                                 name)
 
     # Configuration Unregistration Methods
     '''
@@ -115,9 +123,10 @@ class BOTRenderer:
     '''
     def unregisterRenderable(self, renderable):
         name = renderable.getName()
-        removed = DictUtil.tryRemove(self.__renderables, name,
-                                     ('Attempting to unregister non-existent '
-                                      'Renderable %s from renderer!')%name)
+        removed = self.__renderables.remove(name,
+                                            ('Attempting to unregister non-existent '
+                                             'Renderable %s from renderer!') %
+                                            name)
         if removed is not renderable:
             raise Exception('FATAL: Unregistered Renderable does not match provided Renderable despite sharing name "%s"'%name)
 
@@ -128,7 +137,8 @@ class BOTRenderer:
         name = scene.getName()
         removed = DictUtil.tryRemove(self.__scenes, name,
                                      ('Attempting to unregister non-existent '
-                                      'Scene %s from renderer!')%name)
+                                      'Scene %s from renderer!') %
+                                     name)
         if removed is not scene:
             raise Exception('FATAL: Unregistered Scene does not match provided Scene despite sharing name "%s"'%name)
     
@@ -139,7 +149,8 @@ class BOTRenderer:
         name = camera.getName()
         removed = DictUtil.tryRemove(self.__cameras, name,
                                      ('Attempting to unregister non-existent '
-                                      'Camera %s from renderer!')%name)
+                                      'Camera %s from renderer!') %
+                                     name)
         if removed is not camera:
             raise Exception('FATAL: Unregistered Camera does not match provided Camera despite sharing name "%s"'%name)
 
@@ -150,13 +161,16 @@ class BOTRenderer:
         name = viewport.getName()
         removed = DictUtil.tryRemove(self.__viewports, name,
                                      ('Attempting to unregister non-existent '
-                                      'Viewport %s from renderer!')%name)
+                                      'Viewport %s from renderer!') %
+                                     name)
         if removed is not viewport:
             raise Exception('FATAL: Unregistered Viewport does not match provided Viewport despite sharing name "%s"'%name)
 
     def update(self, deltaTime):
-        for renderableKey in self.__renderables:
-            self.__renderables[renderableKey]._onUpdate(deltaTime)
+        it = self.__renderables.begin()
+        while it != self.__renderables.end():
+            it.getValue()._onUpdate(deltaTime)
+            it = it.next()
 
         self.__screen.fill((255, 255, 255))
         for compositor in self.__compositingChain:
@@ -182,26 +196,6 @@ class BOTRenderer:
 Singleton.transformToSingleton(BOTRenderer)
 
 '''
-    RenderEntity is just a simple wrapper facilitating
-    naming.
-    
-    It provides a constructor which generates arbitrary
-    unique names when a name isn't important.
-'''
-class BOTRenderEntity(object):
-    __EntCount = 0
-
-    def __init__(self, name=None):
-        if name != None:
-            self.__name = name
-        else:
-            self.__name = "%s-%i"%(self.__class__.__name__, BOTRenderEntity.__EntCount)
-            BOTRenderEntity.__EntCount += 1
-
-    def getName(self):
-        return self.__name
-
-'''
     A scene is essentially a container of renderables that will be
     potentially rendered together by a camera.
 
@@ -209,28 +203,36 @@ class BOTRenderEntity(object):
     - insertion and deletion of renderables
     - querying of all renderables which overlap a given rectangle (may not be axis-aligned).
 '''
-class BOTScene(BOTRenderEntity):
+class BOTScene():
     def __init__(self, name=None):
-        super(BOTScene, self).__init__(name)
-        self.__renderables = []
+        self.__name = [name, EntityUtil.genName(self)][name == None]
+        self.__renderables = LLDict()
 
     def addRenderable(self, renderable):
-        self.__renderables.append(renderable)
+        self.__renderables.insert(renderable.getName(), renderable)
 
     def removeRenderable(self, renderable):
-        self.__renderables.remove(renderable)
+        self.__renderables.remove(renderable.getName())
 
     def query(self, camera):
         # TODO: Perform an optimized query
         #       - Maybe use Separating Axis to test non AABB overlap so we don't have to do this...
         result = []
         camRect = RectUtil.findAABB(map(lambda v: camera.transform.getMatrix() * v, camera._genBounds()))
-        for renderable in self.__renderables:
+
+        it = self.__renderables.begin()
+        while it != self.__renderables.end():
+            renderable = it.getValue()
             objRect = RectUtil.findAABB(map(lambda v: renderable.transform.getMatrix() * v, renderable._genBounds()))
             if camRect.colliderect(objRect):
                 result.append(renderable)
+            it = it.next()
+
         result.sort()
         return result
+
+    def getName(self):
+        return self.__name
 
     # TODO: update the scene manager so that querying returns accurate results if
     # objects shifted around since last frame
@@ -242,9 +244,9 @@ class BOTScene(BOTRenderEntity):
     Note that since this is in screen space, (0,0) corresponds to the
     top-left corner.
 '''
-class BOTViewport(BOTRenderEntity):
+class BOTViewport(object):
     def __init__(self, width, height, name=None):
-        super(BOTViewport, self).__init__(name)
+        self.__name = [name, EntityUtil.genName(self)][name == None]
         self.position = Vector2()
         self.dimensions = Vector2(width, height)
 
@@ -252,14 +254,17 @@ class BOTViewport(BOTRenderEntity):
         # TODO: Store this so it isn't generated every time
         return Mat33Util.getViewportMatrix(self.position, self.dimensions)
 
+    def getName(self):
+        return self.__name
+
 '''
     The Camera class tracks a few things other than a transform.
     The Camera has a Width and Height specified in Rendering-World units,
     which are used for culling.
 '''
-class BOTCamera(BOTRenderEntity):
+class BOTCamera(object):
     def __init__(self, width, height, name=None):
-        super(BOTCamera, self).__init__(name)
+        self.__name = [name, EntityUtil.genName(self)][name == None]
         self.transform = Transform()
         self.dimensions = Vector2(width, height)
         self.__rectPts = RectUtil.genRectPts(pygame.Rect(-width/2, -height/2, width, height))
@@ -275,6 +280,8 @@ class BOTCamera(BOTRenderEntity):
         # TODO: Store this so it isn't generated every time
         return Mat33Util.getCamMatrix(self.transform, self.dimensions)
 
+    def getName(self):
+        return self.__name
 '''
     The renderer generates images to the screen by via a series of
     rendering steps called compositing steps.
@@ -370,9 +377,9 @@ class BOTCompositingCache:
         self.__cache.clear()
         self.__cache[BOTCompositingCache.__SCREEN_KEY] = self.__screen
 
-class BOTRenderable(BOTRenderEntity):
+class BOTRenderable(object):
     def __init__(self, name=None):
-        super(BOTRenderable, self).__init__(name)
+        self.__name = [name, EntityUtil.genName(self)][name == None]
         self.transform = Transform()
         self.layer = 0
         self.debug = False
@@ -429,6 +436,9 @@ class BOTRenderable(BOTRenderEntity):
     # 'into' the screen is positive
     def __cmp__(self, renderable):
         return renderable.layer - self.layer
+
+    def getName(self):
+        return self.__name
 
 class BOTPolygon(BOTRenderable):
     def __init__(self, pts, color, name=None):

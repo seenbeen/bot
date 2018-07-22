@@ -1,5 +1,5 @@
 import time
-from util.bot_collections import DictUtil, EntityUtil, LLDict
+from util.bot_collections import EntityUtil, LLDict
 from util.pattern.bot_eventqueue import EventQueue
 from util.pattern.bot_singleton import Singleton
 
@@ -76,7 +76,7 @@ class GameApplication:
 
 class GameObject(object):
     def __init__(self, initComponents, name=None):
-        self.__name = [name, EntityUtil.genName(name)][name == None]
+        self.__name = [name, EntityUtil.genName(self)][name == None]
         self.__components = LLDict()
         self.__inApp = False # is this object already in the game stage?
 
@@ -137,7 +137,7 @@ class GameObject(object):
 
 class GameObjectComponent(object):
     def __init__(self, name=None):
-        self.__name = [name, EntityUtil.genName(name)][name == None]
+        self.__name = [name, EntityUtil.genName(self)][name == None]
         self.__parentGameObject = None
 
     def _bindToParent(self, parentGameObject):
