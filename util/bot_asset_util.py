@@ -37,13 +37,12 @@ class AssetUtil:
                 cx, cy = data[5:7]
                 
                 # need to get (cx, cy) to be center of image
-                halfW, halfH = surfRect.w/2.0, surfRect.h/2.0
-                newCx, newCy = max(halfW, cx), max(halfH, cy)
+                newCx, newCy = max(surfRect.w, surfRect.w - cx), max(surfRect.h, surfRect.h - cy)
 
                 newSurf = pygame.Surface((int(newCx*2), int(newCy*2)), pygame.SRCALPHA)
                 # now to blit old surf onto new surf 
                 ox, oy = int(newCx - cx), int(newCy - cy) # old surf relative to new surf
-                newSurf.blit(img.subsurface(surfRect), (-ox, -oy))
+                newSurf.blit(img.subsurface(surfRect), (ox, oy))
 
                 localRect = pygame.Rect(-cx, cy - surfRect.h, surfRect.w, surfRect.h)
                 newFrame = BOTSprite.Frame(newSurf, localRect, delay)

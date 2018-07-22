@@ -1,5 +1,3 @@
-import time, sys
-import pygame
 from bot_framework.bot_GOSS import *
 
 class TestGameApp(GameAppImpl):
