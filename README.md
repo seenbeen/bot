@@ -3,7 +3,7 @@
 Note: This project is built using Windows.
 ### You will need the following...
 - Python 2.7 32-bit [[Here]](https://www.python.org/ftp/python/2.7.2/python-2.7.2.msi)
-- Pygame 1.9.2a 32-bit [[Here]](http://pygame.org/ftp/pygame-1.9.2a0.win32-py3.2.msi)
+- Pygame 1.9.2a 32-bit [[Here]](http://pygame.org/ftp/pygame-1.9.2a0.win32-py2.7.msi)
 - Py2Exe for Python 2.7 [[Here]](https://sourceforge.net/projects/py2exe/files/latest/download)
 - Git Bash [[Here]](https://git-scm.com/download/win)
 ### Steps
