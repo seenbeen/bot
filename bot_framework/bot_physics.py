@@ -1,28 +1,29 @@
-from util.bot_collections import DictUtil
+from util.bot_collections import DictUtil, LLDict, EntityUtil
 from util.bot_math import *
 from util.pattern.bot_singleton import Singleton
 from util.pattern.bot_eventqueue import EventQueue
 
 class BOTPhysicsSpace:
     def __init__(self):
-        self.__rigidBodies = {}
+        self.__rigidBodies = LLDict()
         self.__resolvers = {}
 
     def addRigidBody(self, rigidBody):
         name = rigidBody.getName()
-        DictUtil.tryStrictInsert(self.__rigidBodies, name, rigidBody,
-                                 ("Attempting to override existing "
-                                  "'BOTPhysicsRigidBody' '%s' in 'BOTPhysicsSpace'!") % name)
+        self.__rigidBodies.insert(name, rigidBody,
+                                  ("Attempting to override existing "
+                                   "'BOTPhysicsRigidBody' '%s' in 'BOTPhysicsSpace'!") % name)
 
     def removeRigidBody(self, rigidBody):
         name = rigidBody.getName()
-        removed = DictUtil.tryRemove(self.__rigidBodies, name,
-                                     ("Attempting to remove non-existent "
-                                      "'BOTPhysicsRigidBody' '%s' from 'BOTPhysicsSpace'!") % name)
+        removed = self.__rigidBodies.remove(name,
+                                            ("Attempting to remove non-existent "
+                                             "'BOTPhysicsRigidBody' '%s' from 'BOTPhysicsSpace'!") % name)
 
         if removed is not rigidBody:
             raise Exception("FATAL: Unregistered 'BOTRigidBody' does not match provided "
                             "'BOTPhysicsRigidBody' despite sharing name '%s'" % name)
+
     def addResolver(self, resolver):
         resolverTuple = resolver.getResolverTuple()
         DictUtil.tryStrictInsert(self.__resolvers, resolverTuple, resolver,
@@ -45,27 +46,33 @@ class BOTPhysicsSpace:
     '''
     def pointCast(self, pt):
         result = []
-        # optimizable, should cache the rbo keys, or iterate using a linked list
-        for rboKey in self.__rigidBodies:
-            rbo = self.__rigidBodies[rboKey]
+        it = self.__rigidBodies.begin()
+        while it != self.__rigidBodies.end():
+            rbo = it.getValue()
             if rbo._collidesWithPointCast(pt):
                 result.append(rbo)
+            it = it.next()
+
         return result
 
     def update(self, deltaTime):
-        for rboKey in self.__rigidBodies:
-            self.__rigidBodies[rboKey]._update(deltaTime)
+        it = self.__rigidBodies.begin()
+        while it != self.__rigidBodies.end():
+            it.getValue()._update(deltaTime)
+            it = it.next()
 
-        n = len(self.__rigidBodies)
-        keys = self.__rigidBodies.keys()
-        for i in range(n):
-            rbA = self.__rigidBodies[keys[i]]
-            for j in range(i+1, n):
-                rbB = self.__rigidBodies[keys[j]]
+        it1 = self.__rigidBodies.begin()
+        while it1 != self.__rigidBodies.end():
+            it2 = it1.next()
+            rbA = it1.getValue()
+            while it2 != self.__rigidBodies.end():
+                rbB = it2.getValue()
                 if rbA._collidesWithCollider(rbB):
                     resolverTuple = BOTPhysicsCollisionResolverTuple(rbA.getTag(), rbB.getTag())
                     if resolverTuple in self.__resolvers:
                         self.__resolvers[resolverTuple]._resolve(rbA, rbB)
+                it2 = it2.next()
+            it1 = it1.next()
 
     def lateUpdate(self):
         self.pump()
@@ -87,14 +94,18 @@ class BOTPhysicsRigidBody:
             raise Exception("Tag provided to 'BOTPhysicsRigidBodyObject' must be of type 'str', got '%s'."%tag.__class__.__name__)
 
         self.__transform = Transform()
+        self.__velocity = Vector2()
         self.__boundObj = boundObj
         self.__collider = collider
         self.__tag = tag
         self.__boundObject = None
-        self.__name = "BOTPhysicsRigidBody %i"%id(self)
+        self.__name = EntityUtil.genName(self)
 
     def getTransform(self):
         return self.__transform
+
+    def getVelocity(self):
+        return self.__velocity
 
     def getBoundObj(self):
         return self.__boundObj
@@ -115,6 +126,7 @@ class BOTPhysicsRigidBody:
         return self.__collider._collidesWithPointCast(pt)
 
     def _update(self, deltaTime):
+        self.__transform.position += self.__velocity * deltaTime
         self.__collider._applyTransform(self.__transform)
 
     def getName(self):

@@ -1,7 +1,12 @@
+import math
+
 from util.bot_collections import DictUtil
-from util.bot_integration import RenderableComponent
+from util.bot_integration import RenderableComponent, RigidBodyComponent
+from util.bot_math import Vector2
+
 from bot_framework.bot_assetManager import AssetManager
 from bot_framework.bot_GOSS import GameObject, GameObjectComponent
+from bot_framework.bot_physics import BOTPhysicsRigidBody, BOTPhysicsCollider
 from bot_framework.bot_render import BOTSprite
 
 class Ship(GameObject):
@@ -22,13 +27,18 @@ class Ship(GameObject):
         def __init__(self, name=None):
             super(self.__class__, self).__init__(name)
             self.shipSprite = None
+            self.rbo = None
 
         def onUpdate(self, dt):
             r = self.shipSprite.transform.rotation
-            self.shipSprite.transform.rotation = (r + dt * 30) % 360
+            newR = (r + dt * 60) % 360
+            self.shipSprite.transform.rotation = newR
+            v = Vector2(math.cos(math.radians(newR + 90)),
+                        math.sin(math.radians(newR + 90))) * 50
+            v.copyTo(self.rbo.getVelocity())
 
         def onLateUpdate(self):
-            pass
+            self.rbo.getTransform().position.copyTo(self.shipSprite.transform.position)
 
         def onEnter(self):
             print "%s onEnter" % self.getName()
@@ -39,13 +49,21 @@ class Ship(GameObject):
         def onBind(self):
             print "%s onBind" % self.getName()
             self.shipSprite = self.getParent().getComponent("SpriteComp").getRenderable()
+            self.rbo = self.getParent().getComponent("RBComp").getRigidBodyObject()
 
         def onUnbind(self):
             print "%s onUnbind" % self.getName()
             self.shipSprite = None
+            self.rbo = None
 
     def __init__(self, sceneName, name=None):
-        rcomp = RenderableComponent(Ship.__Sprite("banking_left"), sceneName, "SpriteComp")
+        sprite = Ship.__Sprite("banking_left")
+        sprite.transform.scale *= Vector2(-1, 1) # bank right
+        rcomp = RenderableComponent(sprite, sceneName, "SpriteComp")
         script = Ship.__Script()
-        comps = [rcomp, script]
+        rbocomp = RigidBodyComponent(BOTPhysicsRigidBody(script,
+                                                         BOTPhysicsCollider(sprite._genBounds()),
+                                                         "SHIP_TAG"),
+                                     "RBComp")
+        comps = [rcomp, rbocomp, script]
         super(Ship, self).__init__(comps, name)

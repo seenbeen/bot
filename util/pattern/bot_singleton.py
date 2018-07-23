@@ -7,9 +7,9 @@ class Singleton:
 
         """Initializes the singleton, calls __init__ with any passed arguments on the singleton's class"""
         @classmethod
-        def initialize(cls, *args):
+        def initialize(cls, *args, **kwargs):
             if (cls.__instance == None):
-                cls.__instance = cls(*args)
+                cls.__instance = cls(*args, **kwargs)
             else:
                 raise Exception("Singleton is already initialized(%s)"%cls.__name__)
             
@@ -35,4 +35,3 @@ class Singleton:
         className.shutdown = shutdown
         className.instance = instance
         className.__instance = None
-        

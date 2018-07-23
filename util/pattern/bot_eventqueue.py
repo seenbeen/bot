@@ -39,15 +39,15 @@ class EventQueue:
 
     __ENQUEUEIFIED = "-ENQUEUEIFIED"
     __QUEUE_KEY = "-EVENT_QUEUE"
-    __CALL_STACK_PUMP_METHOD = None
+    __CALL_STACK_PUMP_METHODS = set()
     
     @staticmethod
     def __pumpifyMethod(method):
         def pumpMethod(*args):
-            if EventQueue.__CALL_STACK_PUMP_METHOD:
-                raise Exception("Fatal: Attempting to surject pump method " +
-                                "'%s' during a pump flush of '%s'" %
-                                (method.__name__, EventQueue.__CALL_STACK_PUMP_METHOD))
+            if method.__name__ in EventQueue.__CALL_STACK_PUMP_METHODS:
+                raise Exception("Fatal: Cyclical pump attempt on method " +
+                                "'%s' detected." %
+                                (method.__name__))
 
             bundle = EventQueue.MethodInfo(method, method.__name__, args)
             args[0].__dict__[EventQueue.__QUEUE_KEY].append(bundle)
@@ -80,9 +80,10 @@ class EventQueue:
             evtQueue = self.__dict__[EventQueue.__QUEUE_KEY]
             evtQueue.sort(cmp=eventComparator)
             for x in evtQueue:
-                EventQueue.__CALL_STACK_PUMP_METHOD = x.name
+                EventQueue.__CALL_STACK_PUMP_METHODS.add(x.name)
                 x.call()
-            EventQueue.__CALL_STACK_PUMP_METHOD = None
+                EventQueue.__CALL_STACK_PUMP_METHODS.remove(x.name)
+
             del evtQueue[:]
 
         className.__init__ = __init__

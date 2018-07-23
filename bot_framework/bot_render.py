@@ -5,11 +5,11 @@ from util.bot_math import *
 from util.pattern.bot_singleton import Singleton
 
 class BOTRenderer:
-    def __init__(self, screenWidth, screenHeight):
+    def __init__(self, screenWidth, screenHeight, windowTitle="BOTApp"):
         self.__screenWidth = screenWidth
         self.__screenHeight = screenHeight
         self.__screen = pygame.display.set_mode((screenWidth, screenHeight))
-
+        pygame.display.set_caption(windowTitle)
         # configuration-related
         self.__compositingChain = []
         self.__renderables = LLDict()

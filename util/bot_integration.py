@@ -1,4 +1,5 @@
-from bot_framework.bot_GOSS import GameObjectComponent
+from bot_framework.bot_GOSS import GameObjectComponent, GameApplication
+from bot_framework.bot_physics import BOTPhysicsSpace
 from bot_framework.bot_render import BOTRenderer
 
 '''
@@ -41,3 +42,29 @@ class RenderableComponent(GameObjectComponent):
 
     def onUnbind(self):
         pass        
+
+class RigidBodyComponent(GameObjectComponent):
+    def __init__(self, rigidBodyObject, name=None):
+        super(RigidBodyComponent, self).__init__(name)
+        self.__rbo = rigidBodyObject
+
+    def getRigidBodyObject(self):
+        return self.__rbo
+
+    def onUpdate(self, dt):
+        pass
+
+    def onLateUpdate(self):
+        pass
+
+    def onEnter(self):
+        BOTPhysicsSpace.instance().addRigidBody(self.__rbo)
+
+    def onExit(self):
+        BOTPhysicsSpace.instance().removeRigidBody(self.__rbo)
+
+    def onBind(self):
+        pass
+
+    def onUnbind(self):
+        pass

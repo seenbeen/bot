@@ -7,6 +7,7 @@ from bot_framework.bot_assetManager import AssetManager
 from bot_framework.bot_fsm import *
 from bot_framework.bot_GOSS import *
 from bot_framework.bot_inputmanager import *
+from bot_framework.bot_physics import BOTPhysicsSpace
 from bot_framework.bot_render import *
 
 from ship import Ship
@@ -42,8 +43,14 @@ class BOTGameApp(GameAppImpl):
     def __shutdownAssetManager(self):
         AssetManager.shutdown()
 
+    def __initializePhysicsSpace(self):
+        BOTPhysicsSpace.initialize()
+
+    def __shutdownPhysicsSpace(self):
+        BOTPhysicsSpace.shutdown()
+
     def __initializeRenderer(self):
-        BOTRenderer.initialize(*BOTGameApp.__WINDOW_DIMENSIONS)
+        BOTRenderer.initialize(*BOTGameApp.__WINDOW_DIMENSIONS, windowTitle="BOT v0.1!")
  
     def __shutdownRenderer(self):
         BOTRenderer.shutdown()
@@ -54,9 +61,10 @@ class BOTGameApp(GameAppImpl):
         
     def __shutdownInputManager(self):
         InputManager.shutdown()
-    
+
     def initialize(self):
         self.__initializeAssetManager()
+        self.__initializePhysicsSpace()
         self.__initializeRenderer()
         self.__initializeInputManager()
         self.__fsm = BOTGameAppFSM(self)
@@ -64,15 +72,18 @@ class BOTGameApp(GameAppImpl):
     def shutdown(self):
         self.__shutdownInputManager()
         self.__shutdownRenderer()
+        self.__shutdownPhysicsSpace()
         self.__shutdownAssetManager()
 
     def update(self, deltaTime):
         InputManager.instance().update(deltaTime)
+        BOTPhysicsSpace.instance().update(deltaTime)
         BOTRenderer.instance().update(deltaTime)
         self.__fsm.update(deltaTime)
 
     def lateUpdate(self):
         InputManager.instance().lateUpdate()
+        BOTPhysicsSpace.instance().lateUpdate()
         self.__fsm.lateUpdate()
 
 class BOTGameAppFSM(BOTFSM):
