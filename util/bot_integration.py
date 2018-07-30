@@ -1,6 +1,8 @@
 from bot_framework.bot_GOSS import GameObjectComponent, GameApplication
 from bot_framework.bot_physics import BOTPhysicsSpace
 from bot_framework.bot_render import BOTRenderer
+from util.bot_math import Transform, Vector2
+from argparse import Action
 
 '''
 This file is primarily used to provide gluing aid when integrating
@@ -12,6 +14,12 @@ For now, all components force their renderable to be part of
 a single scene, specified during creation... We might allow
 the scene to changeable later...
 '''
+class ComponentNameUtil:
+    INPUTLISTENER = "inputListener"
+    RENDER = "renderable"
+    RIGIDBODY = "rigidbody"
+    POSITIONSYNC = "positionsync"
+
 class RenderableComponent(GameObjectComponent):
     def __init__(self, renderable, sceneName, name=None):
         super(RenderableComponent, self).__init__(name)
@@ -41,7 +49,7 @@ class RenderableComponent(GameObjectComponent):
         pass
 
     def onUnbind(self):
-        pass        
+        pass
 
 class RigidBodyComponent(GameObjectComponent):
     def __init__(self, rigidBodyObject, name=None):
@@ -68,3 +76,48 @@ class RigidBodyComponent(GameObjectComponent):
 
     def onUnbind(self):
         pass
+    
+    def getTransform(self):
+        return self.__rbo.getTransform()
+
+class PositionSync(GameObjectComponent):
+    def __init__(self, position = Vector2()):
+        self.__position = position.copy()
+        self.__sync = []
+        self.__source = None
+        super(PositionSync, self).__init__(ComponentNameUtil.POSITIONSYNC)
+
+    def onUpdate(self, dt):
+        pass
+    
+    def onLateUpdate(self):
+        if self.__source != None:
+            self.__source.position.copyTo(self.__position)
+            for trans in self.__sync:
+                self.__source.position.copyTo(trans.position)
+        else:
+            for trans in self.__sync:
+                self.__position.copyTo(trans.position)
+        
+    def syncTransform(self, transform):
+        self.__sync.append(transform)
+
+    def syncFrom(self, transform):
+        self.__source = transform
+        self.__position = transform.position.copy()
+        
+    def getPosition(self):
+        return self.position
+    
+class ProjectileEmitter(GameObjectComponent):
+    def __init__(self, renderable, behaviour):
+        super(ProjectileEmitter, self).__init__([renderable, behaviour], "projectile")
+
+'''
+This class should return a position as a function of time
+this position should be the path that the projectile takes in flight
+Positive Y is the forward direction
+'''
+class ProjectilePath(object):
+    def getPos(self, dt):
+        raise Exception("Error, %s must define 'getPos'" % self.__class__.__name__)

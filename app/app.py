@@ -1,6 +1,7 @@
 import pygame
 
 from util.bot_asset_util import AssetUtil
+from util.bot_logger import Logger
 from util.bot_math import *
 
 from bot_framework.bot_assetManager import AssetManager
@@ -10,7 +11,7 @@ from bot_framework.bot_inputmanager import *
 from bot_framework.bot_physics import BOTPhysicsSpace
 from bot_framework.bot_render import *
 
-from ship import Ship
+from player import Ship
 
 class BOTGameAppQUITListener(InputListener):
     def __init__(self):
@@ -61,8 +62,16 @@ class BOTGameApp(GameAppImpl):
         
     def __shutdownInputManager(self):
         InputManager.shutdown()
+        
+    def __initializeLogger(self):
+        Logger.initialize()
+    
+    def __shutdownLogger(self):
+        Logger.shutdown()
+        
 
     def initialize(self):
+        self.__initializeLogger()
         self.__initializeAssetManager()
         self.__initializePhysicsSpace()
         self.__initializeRenderer()
@@ -70,10 +79,13 @@ class BOTGameApp(GameAppImpl):
         self.__fsm = BOTGameAppFSM(self)
 
     def shutdown(self):
+        
         self.__shutdownInputManager()
         self.__shutdownRenderer()
         self.__shutdownPhysicsSpace()
         self.__shutdownAssetManager()
+        self.__shutdownLogger()
+        
 
     def update(self, deltaTime):
         InputManager.instance().update(deltaTime)

@@ -170,16 +170,20 @@ class GameObjectComponent(object):
         raise Exception("Error, %s must define 'onLateUpdate'" % self.__class__.__name__)
 
     def onEnter(self):
-        raise Exception("Error, %s must define 'onEnter'" % self.__class__.__name__)
+        #raise Exception("Error, %s must define 'onEnter'" % self.__class__.__name__)
+        pass
 
     def onExit(self):
-        raise Exception("Error, %s must define 'onExit'" % self.__class__.__name__)
+        #raise Exception("Error, %s must define 'onExit'" % self.__class__.__name__)
+        pass
 
     def onBind(self):
-        raise Exception("Error, %s must define 'onBind'" % self.__class__.__name__)
+        #raise Exception("Error, %s must define 'onBind'" % self.__class__.__name__)
+        pass
 
     def onUnbind(self):
-        raise Exception("Error, %s must define 'onUnbind'" % self.__class__.__name__)
+        #raise Exception("Error, %s must define 'onUnbind'" % self.__class__.__name__)
+        pass
 
 # we actually want add/removes weighted the same so that resolution is in the order of calling
 def __GameObjectQueue():

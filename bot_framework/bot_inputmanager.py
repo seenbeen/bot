@@ -38,7 +38,7 @@ class InputManager(object):
             temp = self.__nodes.pop(self.__nodes.index(node))
             self.__nodes.insert(0, temp)
         
-        def getName(self):
+        def getID(self):
             return str(id(self))+self.__class__.__name__
 
     '''
@@ -55,17 +55,17 @@ class InputManager(object):
     In both cases, the InputManager will set Listener to be a child of Parent
     '''
     def _addListener(self, listener, parent):
-        if listener.getName() in self.__IDmap:
+        if listener.getID() in self.__IDmap:
             raise Exception("Error, %s object is already in the input tree"%listener.__class__.__name__)
         if isinstance(listener, InputListener):
             temp = InputManager.__InputTreeNode(listener)
-            self.__IDmap[listener.getName()] = temp
+            self.__IDmap[listener.getID()] = temp
             
             if isinstance(parent, str):
-                DictUtil.tryFetch(self.__IDmap, parent.getName(), "Provided object: '%s' has not been added to the input tree"%parent.__class__.__name__)._addNode(temp)
+                DictUtil.tryFetch(self.__IDmap, parent.getID(), "Provided object: '%s' has not been added to the input tree"%parent.__class__.__name__)._addNode(temp)
                 temp._parentNode = self.__IDmap[parent]
             elif isinstance(parent, InputListener):
-                DictUtil.tryFetch(self.__IDmap, parent.getName(), "Provided object: '%s' has not been added to the input tree"%parent.__class__.__name__)._addNode(temp)
+                DictUtil.tryFetch(self.__IDmap, parent.getID(), "Provided object: '%s' has not been added to the input tree"%parent.__class__.__name__)._addNode(temp)
                 temp._parentNode = self._getNodeFromListener(parent)
             else:
                 raise Exception("provided object: '%s' is not a correct type to be a parent to an Input Node"%parent.__class__.__name__)
@@ -79,11 +79,11 @@ class InputManager(object):
     priorityKey is a key name that was defined in setupPriority
     '''
     def _addToTopLevel(self, listener, priorityKey):
-        if listener.getName() in self.__IDmap:
+        if listener.getID() in self.__IDmap:
             raise Exception("Error, %s object is already in the input tree"%listener.__class__.__name__)
         if isinstance(listener, InputListener):
             temp = InputManager.__InputTreeNode(listener)
-            self.__IDmap[listener.getName()] = temp
+            self.__IDmap[listener.getID()] = temp
             DictUtil.tryFetch(self.__nodes, priorityKey, "Provided name: '%s' is not an existing top level key"%priorityKey).append(temp)
             
     '''
@@ -121,14 +121,14 @@ class InputManager(object):
     returns the associated node, given a listener
     '''
     def _getNodeFromListener(self, listener):
-        return DictUtil.tryFetch(self.__IDmap, listener.getName(), "listener: %s has not been added to the input manager"%listener.__class__.__name__)
+        return DictUtil.tryFetch(self.__IDmap, listener.getID(), "listener: %s has not been added to the input manager"%listener.__class__.__name__)
     
     '''
     This function will bring a listener to the head of it's parents list.
     being at the head of a list will ensure that events are passed to it first, before other listeners belonging to the same parent.
     '''
     def _bringFocus(self, listener):
-        if listener.getName() in self.__IDmap:
+        if listener.getID() in self.__IDmap:
             listenerNode = self._getNodeFromListener(listener)
             if listenerNode._parentNode != None:
                 listenerNode._parentNode._bringFocus(listenerNode)
@@ -164,7 +164,7 @@ class InputListener(object):
     def onEvent(self, evt):
         raise Exception("Error, 'onEvent' is not implemented in %s-%i"%(self.__class__.__name__, id(self)))
     
-    def getName(self):
+    def getID(self):
         return str(id(self))+self.__class__.__name__
 
         
