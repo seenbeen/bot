@@ -156,6 +156,7 @@ class BOTGameAppFSM(BOTFSM):
     def __MenuTransitionTo(self, toState):
         # remove stuff in opposite order to adding
         GameApplication.instance().removeObject(self.shipA)
+        GameApplication.instance().removeAllSpawned()
         # temporary hack... we need to flush removes before renderer wipes
         GameApplication.instance().pump()
 

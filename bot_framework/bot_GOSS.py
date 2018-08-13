@@ -21,6 +21,7 @@ class GameApplication:
         self.__gameObjects = LLDict()
         self.__running = True
         self.__impl = implementation()
+        self.__spawnedObj = []
 
     def run(self):
         self.__impl.initialize()
@@ -70,6 +71,16 @@ class GameApplication:
 
     def getGameObject(self, name):
         return self.__gameObjects.get(name, "Gameobject: %s being fetched does not exist" % name)
+    
+    def registerSpawnedObject(self, obj):
+        if self.__gameObjects.keyIn(obj.getName()):
+            self.__spawnedObj.append(obj)
+        else:
+            raise Exception("Fatal: '%s' object must be added to GameApplication first before registering as spawne"%(obj.getName()))
+        
+    def removeAllSpawned(self):
+        for obj in self.__spawnedObj:
+            self.removeObject(obj)
 
     def quitApp(self):
         self.__running = False
@@ -134,6 +145,9 @@ class GameObject(object):
 
     def getName(self):
         return self.__name
+    
+    def setSpawned(self):
+        GameApplication.instance().registerSpawnedObject(self)
 
 class GameObjectComponent(object):
     def __init__(self, name=None):
@@ -191,7 +205,7 @@ def __GameObjectQueue():
     EventQueue.enQueueify(GameObject, QUEUED_METHODS, lambda eventA, eventB : 0)
 
 def __GameAppQueue():
-    QUEUED_METHODS = [GameApplication.addObject, GameApplication.removeObject]
+    QUEUED_METHODS = [GameApplication.addObject, GameApplication.removeObject, GameApplication.registerSpawnedObject]
     EventQueue.enQueueify(GameApplication, QUEUED_METHODS, lambda eventA, eventB : 0)
     
 __GameAppQueue()    

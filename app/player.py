@@ -1,8 +1,10 @@
 import math
 import pygame
 
+from projectile import BasicPlaneProj
+
 from util.bot_collections import DictUtil
-from util.bot_integration import RenderableComponent, RigidBodyComponent, ComponentNameUtil, PositionSync
+from util.bot_integration import RenderableComponent, RigidBodyComponent, ComponentNameUtil, PositionSync, ProjectileEmitter
 from util.bot_math import Vector2
 from util.bot_logger import Logger
 
@@ -27,11 +29,13 @@ class Ship(GameObject):
             self.debug = True
 
     class __Script(GameObjectComponent):
-        def __init__(self, name=None):
+        def __init__(self, name="ShipScript"):
             super(self.__class__, self).__init__(name)
             self.shipSprite = None
             self.rbo = None
             self.listener = None
+            self.emitter = None
+            self.coolDown = 0.0
 
         def onUpdate(self, dt):
             '''
@@ -57,6 +61,14 @@ class Ship(GameObject):
             vel *= 0.99
             
             vel.copyTo(self.rbo.getVelocity())
+            
+            if (self.listener.getCondition('action')):
+                if (self.coolDown < 0.0):
+                    self.emitter.spawnProjectile()
+                    self.coolDown = 2.0
+                
+            self.coolDown -= dt
+                
             #Logger.instance().log(str(self.rbo.getVelocity()))
 
         def onLateUpdate(self):
@@ -74,6 +86,7 @@ class Ship(GameObject):
             self.shipSprite = self.getParent().getComponent(ComponentNameUtil.RENDER).getRenderable()
             self.rbo = self.getParent().getComponent(ComponentNameUtil.RIGIDBODY).getRigidBodyObject()
             self.listener = self.getParent().getComponent(ComponentNameUtil.INPUTLISTENER)
+            self.emitter = self.getParent().getComponent("ProjectileEmitter")
 
         def onUnbind(self):
             print "%s onUnbind" % self.getName()
@@ -84,17 +97,20 @@ class Ship(GameObject):
         sprite = Ship.__Sprite("banking_left")
         sprite.transform.scale *= Vector2(-1, 1) # bank right
         rcomp = RenderableComponent(sprite, sceneName, ComponentNameUtil.RENDER)
-        script = Ship.__Script()
+        script = Ship.__Script("ShipScript")
         rbocomp = RigidBodyComponent(BOTPhysicsRigidBody(script,
                                                          BOTPhysicsCollider(sprite._genBounds()),
                                                          "SHIP_TAG"),
                                      ComponentNameUtil.RIGIDBODY)
+        
+        emitter = ProjectileEmitter(BasicPlaneProj, sceneName, Vector2(0,10))
+        
         syncer = PositionSync()
         syncer.syncTransform(sprite.transform)
         syncer.syncFrom(rbocomp.getTransform())
         
         listen = ShipListener(ShipListener.DEFAULT)
-        comps = [rcomp, rbocomp, listen, syncer, script]
+        comps = [rcomp, rbocomp, listen, syncer, emitter, script]
         super(Ship, self).__init__(comps, name)
         
 class ShipListener(GameObjectComponent, InputListener):

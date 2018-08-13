@@ -107,11 +107,32 @@ class PositionSync(GameObjectComponent):
         self.__position = transform.position.copy()
         
     def getPosition(self):
-        return self.position
+        return self.__position
     
 class ProjectileEmitter(GameObjectComponent):
-    def __init__(self, renderable, behaviour):
-        super(ProjectileEmitter, self).__init__([renderable, behaviour], "projectile")
+    def __init__(self, toSpawn, sceneName, spawnOffset):
+        self.toSpawn = toSpawn
+        self.__lastSide = 1
+        self.spawnOffset = spawnOffset
+        self.sceneName = sceneName
+        self.rbo = None
+        super(ProjectileEmitter, self).__init__("ProjectileEmitter")
+        
+    def onBind(self):
+        self.rbo = self.getParent().getComponent(ComponentNameUtil.RIGIDBODY).getRigidBodyObject()
+    
+    def spawnProjectile(self):
+        basevec = Vector2(1,0)*self.__lastSide
+        proj = self.toSpawn(self.rbo.getTransform().position.copy() + self.spawnOffset + basevec, self.sceneName)
+        GameApplication.instance().addObject(proj)
+        proj.setSpawned()
+        self.__lastSide *= -1
+        
+    def onUpdate(self, dt):
+        pass
+
+    def onLateUpdate(self):
+        pass
 
 '''
 This class should return a position as a function of time

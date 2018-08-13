@@ -174,6 +174,9 @@ class LLDict:
             failMessage = "Trying to fetch non-existent key '%s' from LLDict" % key
         it = DictUtil.tryFetch(self.__dict, key, failMessage)
         return it.getValue()
+    
+    def keyIn(self, key):
+        return key in self.__dict
 
     def begin(self):
         return self.__linkedList.begin()
