@@ -2,6 +2,7 @@ from bot_framework.bot_GOSS import GameObjectComponent, GameApplication
 from bot_framework.bot_physics import BOTPhysicsSpace
 from bot_framework.bot_render import BOTRenderer
 from util.bot_math import Transform, Vector2
+from util.bot_logger import Logger
 from argparse import Action
 
 '''
@@ -19,6 +20,12 @@ class ComponentNameUtil:
     RENDER = "renderable"
     RIGIDBODY = "rigidbody"
     POSITIONSYNC = "positionsync"
+    MAINSCRIPT = "script"
+    
+class ColliderTagsUtil:
+    ENEMY = "enemy"
+    PLAYER = "player"
+    PROJECTILE = "projectile"
 
 class RenderableComponent(GameObjectComponent):
     def __init__(self, renderable, sceneName, name=None):
@@ -101,6 +108,10 @@ class PositionSync(GameObjectComponent):
         
     def syncTransform(self, transform):
         self.__sync.append(transform)
+        if self.__source != None:
+            self.__source.position.copyTo(transform.position)
+        else:
+            self.__position.copyTo(transform.position)
 
     def syncFrom(self, transform):
         self.__source = transform

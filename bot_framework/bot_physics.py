@@ -2,6 +2,7 @@ from util.bot_collections import DictUtil, LLDict, EntityUtil
 from util.bot_math import *
 from util.pattern.bot_singleton import Singleton
 from util.pattern.bot_eventqueue import EventQueue
+from util.bot_logger import Logger
 
 class BOTPhysicsSpace:
     def __init__(self):
@@ -68,6 +69,7 @@ class BOTPhysicsSpace:
             while it2 != self.__rigidBodies.end():
                 rbB = it2.getValue()
                 if rbA._collidesWithCollider(rbB):
+                    Logger.instance().log("Collision between:%s and %s"%(rbA.getTag(), rbB.getTag()))
                     resolverTuple = BOTPhysicsCollisionResolverTuple(rbA.getTag(), rbB.getTag())
                     if resolverTuple in self.__resolvers:
                         self.__resolvers[resolverTuple]._resolve(rbA, rbB)

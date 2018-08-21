@@ -29,7 +29,7 @@ class Ship(GameObject):
             self.debug = True
 
     class __Script(GameObjectComponent):
-        def __init__(self, name="ShipScript"):
+        def __init__(self, name = ComponentNameUtil.MAINSCRIPT ):
             super(self.__class__, self).__init__(name)
             self.shipSprite = None
             self.rbo = None
@@ -106,8 +106,9 @@ class Ship(GameObject):
         emitter = ProjectileEmitter(BasicPlaneProj, sceneName, Vector2(0,10))
         
         syncer = PositionSync()
-        syncer.syncTransform(sprite.transform)
         syncer.syncFrom(rbocomp.getTransform())
+        syncer.syncTransform(sprite.transform)
+        
         
         listen = ShipListener(ShipListener.DEFAULT)
         comps = [rcomp, rbocomp, listen, syncer, emitter, script]

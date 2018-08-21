@@ -12,6 +12,8 @@ from bot_framework.bot_physics import BOTPhysicsSpace
 from bot_framework.bot_render import *
 
 from player import Ship
+from enemy import BasicPlaneEnemy
+from projectile import EnemyProjectileResolver
 
 class BOTGameAppQUITListener(InputListener):
     def __init__(self):
@@ -46,6 +48,7 @@ class BOTGameApp(GameAppImpl):
 
     def __initializePhysicsSpace(self):
         BOTPhysicsSpace.initialize()
+        BOTPhysicsSpace.instance().addResolver(EnemyProjectileResolver())
 
     def __shutdownPhysicsSpace(self):
         BOTPhysicsSpace.shutdown()
@@ -88,6 +91,7 @@ class BOTGameApp(GameAppImpl):
         
 
     def update(self, deltaTime):
+        Logger.instance().tick()
         InputManager.instance().update(deltaTime)
         BOTPhysicsSpace.instance().update(deltaTime)
         BOTRenderer.instance().update(deltaTime)
@@ -151,6 +155,7 @@ class BOTGameAppFSM(BOTFSM):
         renderer.chainCompositor(self.uiCameraCompositor)
 
         GameApplication.instance().addObject(self.shipA)
+        GameApplication.instance().addObject(BasicPlaneEnemy(Vector2(10,10),self.gameScene.getName()))
 
     @staticmethod
     def __MenuTransitionTo(self, toState):

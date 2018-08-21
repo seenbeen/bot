@@ -2,27 +2,14 @@ import math
 import pygame
 
 from util.bot_collections import DictUtil
-from util.bot_integration import RenderableComponent, RigidBodyComponent, ComponentNameUtil, PositionSync, ProjectilePath, ProjectileEmitter
+from util.bot_integration import RenderableComponent, RigidBodyComponent, ComponentNameUtil, ColliderTagsUtil, PositionSync, ProjectilePath, ProjectileEmitter
 from util.bot_math import Vector2
 from util.bot_logger import Logger
 
 from bot_framework.bot_assetManager import AssetManager
-from bot_framework.bot_GOSS import GameObject, GameObjectComponent
-from bot_framework.bot_physics import BOTPhysicsRigidBody, BOTPhysicsCollider
+from bot_framework.bot_GOSS import GameObject, GameObjectComponent, GameApplication
+from bot_framework.bot_physics import BOTPhysicsRigidBody, BOTPhysicsCollider, BOTPhysicsCollisionResolver
 from bot_framework.bot_render import BOTSprite
-
-class basicEmitter(GameObjectComponent):
-    def __init__(self):
-        super(basicEmitter, self).__init__(self, "ProjectileEmmiter")
-        
-    def fireProjectile(self):
-        temp = Projectile()
-        
-    
-    def onUpdate(self, dt):
-        pass
-    def onLateUpdate(self):
-        pass
 
 class StraightPath(ProjectilePath):
     def __init__(self, speed, initPos):
@@ -36,7 +23,7 @@ class StraightPath(ProjectilePath):
 
 class Projectile(GameObject):
     class Script(GameObjectComponent):
-        def __init__(self, pather, dmg, name="ProjectileScript"):
+        def __init__(self, pather, dmg, name = ComponentNameUtil.MAINSCRIPT):
             super(self.__class__, self).__init__(name)
             self.pather = pather
             self.rbo = None
@@ -44,8 +31,6 @@ class Projectile(GameObject):
             self.sync = None
             self.dmg = dmg
             
-            
-        
         def onUpdate(self, dt):
             self.pather.getPos(dt).copyTo(self.sync.getPosition())
         
@@ -57,9 +42,11 @@ class Projectile(GameObject):
             self.rbo = self.getParent().getComponent(ComponentNameUtil.RIGIDBODY).getRigidBodyObject()
             self.sync = self.getParent().getComponent(ComponentNameUtil.POSITIONSYNC)
             
+        def getDamage(self):
+            return self.dmg
+        
+            
     def __init__(self, pos, dmg, pather, sceneName, sprite, name=None):
-        
-        
         
         rcomp = RenderableComponent(sprite, sceneName, ComponentNameUtil.RENDER)
         
@@ -67,12 +54,12 @@ class Projectile(GameObject):
         
         rbocomp = RigidBodyComponent(BOTPhysicsRigidBody(script,
                                                          BOTPhysicsCollider(sprite._genBounds()),
-                                                         "PROJ_TAG"),
+                                                         ColliderTagsUtil.PROJECTILE),
                                      ComponentNameUtil.RIGIDBODY)
-        syncer = PositionSync()
+        
+        syncer = PositionSync(pos)
         syncer.syncTransform(sprite.transform)
-        
-        
+        syncer.syncTransform(rbocomp.getTransform())
         
         comps = [rcomp, rbocomp, syncer, script]
         super(Projectile, self).__init__(comps, name)
@@ -96,3 +83,18 @@ class BasicPlaneProj(Projectile):
         asset = AssetManager.instance().loadAsset("assets/raiden.bsprite")
         sprite = BasicPlaneProj.__Sprite(asset, "still")
         super(BasicPlaneProj, self).__init__(pos, 1, pather, sceneName, sprite)
+        
+class EnemyProjectileResolver(BOTPhysicsCollisionResolver):
+        def __init__(self):
+            super(EnemyProjectileResolver,
+                  self).__init__(ColliderTagsUtil.ENEMY, ColliderTagsUtil.PROJECTILE)
+
+        def onResolve(self, enemy, projectile):
+            enemyScript = enemy.getBoundObj()
+            proj = projectile.getBoundObj()
+            enemyScript.dealDamage(proj.getDamage())
+            
+            GameApplication.instance().removeObject(proj.getParent())
+            # pretend during this update fireball obj also went peace due to collision
+            #physx.removeRigidBody(rbFireball)
+            

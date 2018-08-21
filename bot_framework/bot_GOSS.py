@@ -2,6 +2,7 @@ import time
 from util.bot_collections import EntityUtil, LLDict
 from util.pattern.bot_eventqueue import EventQueue
 from util.pattern.bot_singleton import Singleton
+from util.bot_logger import Logger
 
 class GameAppImpl:
     def initialize(self):
@@ -64,6 +65,7 @@ class GameApplication:
         obj._onEnter()
 
     def removeObject(self, obj):
+        Logger.instance().log("%s removed"%obj.getName())
         name = obj.getName()
         obj = self.__gameObjects.get(name, "Attempting to remove non-existent GameObject %s from GameApplication" % name)
         obj._onExit()
