@@ -2,6 +2,7 @@ import time
 from util.bot_collections import EntityUtil, LLDict
 from util.pattern.bot_eventqueue import EventQueue
 from util.pattern.bot_singleton import Singleton
+from util.bot_logger import Logger
 
 class GameAppImpl:
     def initialize(self):
@@ -39,14 +40,16 @@ class GameApplication:
                 it.getValue().update(deltaTime)
                 it = it.next()
 
-            self.__impl.lateUpdate()
-
             it = self.__gameObjects.begin()
             while it != self.__gameObjects.end():
                 it.getValue().lateUpdate()
                 it = it.next()
-
+            
             self.pump()
+             
+            self.__impl.lateUpdate()
+
+            
 
         # Sanity check for remaining objects
         objs = []
@@ -59,15 +62,22 @@ class GameApplication:
 
         self.__impl.shutdown()
 
-    def addObject(self, obj):
+    def addObject(self, obj, spawned = False):
         self.__gameObjects.insert(obj.getName(), obj, "GameObject %s already exists in GameApplication" % obj.getName())
         obj._onEnter()
+        
+        if spawned:
+            self.registerSpawnedObject(obj)
+            
 
     def removeObject(self, obj):
         name = obj.getName()
         obj = self.__gameObjects.get(name, "Attempting to remove non-existent GameObject %s from GameApplication" % name)
         obj._onExit()
         self.__gameObjects.remove(name)
+        
+        if obj in self.__spawnedObj:
+            self.__spawnedObj.remove(obj)
 
     def getGameObject(self, name):
         return self.__gameObjects.get(name, "Gameobject: %s being fetched does not exist" % name)
@@ -145,9 +155,6 @@ class GameObject(object):
 
     def getName(self):
         return self.__name
-    
-    def setSpawned(self):
-        GameApplication.instance().registerSpawnedObject(self)
 
 class GameObjectComponent(object):
     def __init__(self, name=None):

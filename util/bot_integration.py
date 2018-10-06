@@ -2,6 +2,7 @@ from bot_framework.bot_GOSS import GameObjectComponent, GameApplication
 from bot_framework.bot_physics import BOTPhysicsSpace
 from bot_framework.bot_render import BOTRenderer
 from util.bot_math import Transform, Vector2
+from util.bot_logger import Logger
 from argparse import Action
 
 '''
@@ -19,6 +20,12 @@ class ComponentNameUtil:
     RENDER = "renderable"
     RIGIDBODY = "rigidbody"
     POSITIONSYNC = "positionsync"
+    MAINSCRIPT = "script"
+    
+class ColliderTagsUtil:
+    ENEMY = "enemy"
+    PLAYER = "player"
+    PROJECTILE = "projectile"
 
 class RenderableComponent(GameObjectComponent):
     def __init__(self, renderable, sceneName, name=None):
@@ -101,6 +108,10 @@ class PositionSync(GameObjectComponent):
         
     def syncTransform(self, transform):
         self.__sync.append(transform)
+        if self.__source != None:
+            self.__source.position.copyTo(transform.position)
+        else:
+            self.__position.copyTo(transform.position)
 
     def syncFrom(self, transform):
         self.__source = transform
@@ -124,8 +135,7 @@ class ProjectileEmitter(GameObjectComponent):
     def spawnProjectile(self):
         basevec = Vector2(1,0)*self.__lastSide
         proj = self.toSpawn(self.rbo.getTransform().position.copy() + self.spawnOffset + basevec, self.sceneName)
-        GameApplication.instance().addObject(proj)
-        proj.setSpawned()
+        GameApplication.instance().addObject(proj, True)
         self.__lastSide *= -1
         
     def onUpdate(self, dt):

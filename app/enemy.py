@@ -8,31 +8,21 @@ from util.bot_logger import Logger
 
 from bot_framework.bot_assetManager import AssetManager
 from bot_framework.bot_GOSS import GameObject, GameObjectComponent, GameApplication
-from bot_framework.bot_physics import BOTPhysicsRigidBody, BOTPhysicsCollider, BOTPhysicsCollisionResolver
+from bot_framework.bot_physics import BOTPhysicsRigidBody, BOTPhysicsCollider
 from bot_framework.bot_render import BOTSprite
 
-class StraightPath(ProjectilePath):
-    def __init__(self, speed, initPos):
-        self.time = 0
-        self.speed = speed
-        self.__initPos = initPos
-        
-    def getPos(self, dt):
-        self.time += dt
-        return Vector2(0,self.time*self.speed) + self.__initPos
 
-class Projectile(GameObject):
+class Enemy(GameObject):
     class Script(GameObjectComponent):
-        def __init__(self, pather, dmg, name = ComponentNameUtil.MAINSCRIPT):
+        def __init__(self, hp, name = ComponentNameUtil.MAINSCRIPT):
             super(self.__class__, self).__init__(name)
-            self.pather = pather
             self.rbo = None
             self.render = None
             self.sync = None
-            self.dmg = dmg
+            self.hp = hp
             
         def onUpdate(self, dt):
-            self.pather.getPos(dt).copyTo(self.sync.getPosition())
+            pass
         
         def onLateUpdate(self):
             pass
@@ -42,29 +32,30 @@ class Projectile(GameObject):
             self.rbo = self.getParent().getComponent(ComponentNameUtil.RIGIDBODY).getRigidBodyObject()
             self.sync = self.getParent().getComponent(ComponentNameUtil.POSITIONSYNC)
             
-        def getDamage(self):
-            return self.dmg
-        
+        def dealDamage(self, dmg):
+            self.hp -= dmg
+            if (self.hp <= 0):
+                GameApplication.instance().removeObject(self.getParent())
             
-    def __init__(self, pos, dmg, pather, sceneName, sprite, name=None):
+    def __init__(self, pos, hp, sceneName, sprite, name=None):
         
         rcomp = RenderableComponent(sprite, sceneName, ComponentNameUtil.RENDER)
         
-        script = Projectile.Script(pather, dmg)
+        script = Enemy.Script(hp)
         
         rbocomp = RigidBodyComponent(BOTPhysicsRigidBody(script,
                                                          BOTPhysicsCollider(sprite._genBounds()),
-                                                         ColliderTagsUtil.PROJECTILE),
+                                                         ColliderTagsUtil.ENEMY),
                                      ComponentNameUtil.RIGIDBODY)
         
-        syncer = PositionSync(pos)
+        syncer = PositionSync()
+        syncer.syncFrom(rbocomp.getTransform())
         syncer.syncTransform(sprite.transform)
-        syncer.syncTransform(rbocomp.getTransform())
         
-        comps = [rcomp, rbocomp, syncer, script]
-        super(Projectile, self).__init__(comps, name)
+        comps = [rcomp, syncer, rbocomp, script]
+        super(Enemy, self).__init__(comps, name)
         
-class BasicPlaneProj(Projectile):
+class BasicPlaneEnemy(Enemy):
     class __Sprite(BOTSprite):
         def __init__(self, animSet, initAnimKey):
             
@@ -79,22 +70,6 @@ class BasicPlaneProj(Projectile):
             self.debug = True
     
     def __init__(self, pos, sceneName):
-        pather = StraightPath(30, pos)
         asset = AssetManager.instance().loadAsset("assets/raiden.bsprite")
-        sprite = BasicPlaneProj.__Sprite(asset, "still")
-        super(BasicPlaneProj, self).__init__(pos, 1, pather, sceneName, sprite)
-        
-class EnemyProjectileResolver(BOTPhysicsCollisionResolver):
-        def __init__(self):
-            super(EnemyProjectileResolver,
-                  self).__init__(ColliderTagsUtil.ENEMY, ColliderTagsUtil.PROJECTILE)
-
-        def onResolve(self, enemy, projectile):
-            enemyScript = enemy.getBoundObj()
-            proj = projectile.getBoundObj()
-            enemyScript.dealDamage(proj.getDamage())
-            
-            GameApplication.instance().removeObject(proj.getParent())
-            # pretend during this update fireball obj also went peace due to collision
-            #physx.removeRigidBody(rbFireball)
-            
+        sprite = BasicPlaneEnemy.__Sprite(asset, "still")
+        super(BasicPlaneEnemy, self).__init__(pos, 5, sceneName, sprite)
